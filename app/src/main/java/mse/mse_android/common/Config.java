@@ -29,7 +29,7 @@ public class Config {
     private Activity context;
 
     private String mseVersion;
-//    private String defaultBrowser;
+    //    private String defaultBrowser;
     private String resDir;
     private String resultsFileName;
     private String searchString;
@@ -54,50 +54,57 @@ public class Config {
         if (!configFile.exists()) {
             logger.log(LogLevel.LOW, "No config file found - setting defaults");
             setDefaults();
+            save();
+            return;
+        } else {
+
+            // for now always use defaults
+            setDefaults();
+            save();
             return;
         }
-
-        BufferedReader br = null;
-        try {
-
-            br = new BufferedReader(new FileReader(configFilePath));
-
-            mseVersion = getNextOption(br, "mseVersion");
-            resDir = getNextOption(br, "mseVersion");
-            resultsFileName = getNextOption(br, "resultsFileName");
-            searchString = getNextOption(br, "searchString");
-            synopsis = getNextBooleanOption(br, "synopsis");
-            beep = getNextBooleanOption(br, "beep");
-            splashWindow = getNextBooleanOption(br, "splashWindow");
-            autoLoad = getNextBooleanOption(br, "autoLoad");
-            fullScan = getNextBooleanOption(br, "fullScan");
-            setup = getNextBooleanOption(br, "setup");
-            debugOn = getNextBooleanOption(br, "debugOn");
-
-            // skip selected authors line
-            br.readLine();
-
-            selectedAuthors = new HashMap<>();
-
-            // for each searchable author
-            for (Author nextAuthor : Author.values()) {
-                if (nextAuthor.isSearchable()) {
-                    String[] splitLine = br.readLine().split(":");
-                    selectedAuthors.put(splitLine[0], Boolean.parseBoolean(splitLine[1]));
-                }
-            }
-
-
-        } catch (IOException | ArrayIndexOutOfBoundsException ex) {
-            logger.log(LogLevel.LOW, "Error reading config - setting defaults");
-            setDefaults();
-        }  finally {
-            if (br != null) try {
-                br.close();
-            } catch (IOException e) {
-                logger.log(LogLevel.HIGH, "Could not close config file");
-            }
-        }
+//
+//        BufferedReader br = null;
+//        try {
+//
+//            br = new BufferedReader(new FileReader(configFilePath));
+//
+//            mseVersion = getNextOption(br, "mseVersion");
+//            resDir = getNextOption(br, "mseVersion");
+//            resultsFileName = getNextOption(br, "resultsFileName");
+//            searchString = getNextOption(br, "searchString");
+//            synopsis = getNextBooleanOption(br, "synopsis");
+//            beep = getNextBooleanOption(br, "beep");
+//            splashWindow = getNextBooleanOption(br, "splashWindow");
+//            autoLoad = getNextBooleanOption(br, "autoLoad");
+//            fullScan = getNextBooleanOption(br, "fullScan");
+//            setup = getNextBooleanOption(br, "setup");
+//            debugOn = getNextBooleanOption(br, "debugOn");
+//
+//            // skip selected authors line
+//            br.readLine();
+//
+//            selectedAuthors = new HashMap<>();
+//
+//            // for each searchable author
+//            for (Author nextAuthor : Author.values()) {
+//                if (nextAuthor.isSearchable()) {
+//                    String[] splitLine = br.readLine().split(":");
+//                    selectedAuthors.put(splitLine[0], Boolean.parseBoolean(splitLine[1]));
+//                }
+//            }
+//
+//
+//        } catch (IOException | ArrayIndexOutOfBoundsException ex) {
+//            logger.log(LogLevel.LOW, "Error reading config - setting defaults");
+//            setDefaults();
+//        }  finally {
+//            if (br != null) try {
+//                br.close();
+//            } catch (IOException e) {
+//                logger.log(LogLevel.HIGH, "Could not close config file");
+//            }
+//        }
 
     }
 
@@ -147,11 +154,12 @@ public class Config {
     public void save() {
         if (!setup) {
 
-            File configFile = new File(context.getFilesDir() + configFilePath);
+            File configFile = new File(configFilePath);
 
+            BufferedWriter bw = null;
             try {
 
-                BufferedWriter bw = new BufferedWriter(new FileWriter(configFile));
+                bw = new BufferedWriter(new FileWriter(configFile));
 
                 writeOption(bw,"mseVersion",mseVersion);
                 writeOption(bw,"resDir",resDir);
@@ -184,6 +192,12 @@ public class Config {
 
             } catch (IOException ioe) {
                 logger.log(LogLevel.LOW, "Could not write config" + ioe.getMessage());
+            } finally {
+                if (bw != null) try {
+                    bw.close();
+                } catch (IOException e) {
+                    logger.log(LogLevel.HIGH, e.getMessage());
+                }
             }
         }
     }
@@ -201,7 +215,7 @@ public class Config {
     public void setSetup(boolean setupCheck) {
         setup = setupCheck;
     }
-    
+
     public boolean isSettingUp() {
         return setup;
     }

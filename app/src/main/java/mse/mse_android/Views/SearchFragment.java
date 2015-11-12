@@ -23,6 +23,7 @@ import mse.mse_android.data.Author;
 import mse.mse_android.data.Search;
 import mse.mse_android.search.AuthorSearch;
 import mse.mse_android.search.IndexStore;
+import mse.mse_android.search.SearchScope;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -68,6 +69,7 @@ public class SearchFragment extends Fragment {
 
                 String searchString = searchTextBox.getText().toString();
                 Search search = new Search(mActivity, cfg, logger, searchString, progressBar, tvSearchProgress);
+                search.setSearchScope(SearchScope.SENTENCE);
 
                 Author authorToSearch = Author.AJG;
                 ArrayList<Author> authorsToSearch = new ArrayList<>();

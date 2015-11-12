@@ -116,7 +116,7 @@ public class AuthorSearch extends Thread {
         context.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                webView.loadUrl(context.getFilesDir() + cfg.getResultsFileName());
+                webView.loadUrl("file:///" + context.getFilesDir() + cfg.getResultsFileName());
             }
         });
 

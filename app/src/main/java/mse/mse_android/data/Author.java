@@ -59,7 +59,7 @@ public enum Author {
     }
 
     public String getVolumePath(int volumeNumber) {
-        return getTargetPath(folder + volumeNumber + ".htm");
+        return getTargetPath(code + volumeNumber + ".htm");
     }
 
     public String getContentsName() {
