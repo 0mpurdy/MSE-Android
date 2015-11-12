@@ -36,7 +36,6 @@ public class AuthorSearch extends Thread {
     //    private SearchScope searchScope;
     private ArrayList<Author> authorsToSearch;
     private ILogger logger;
-    private IndexStore indexStore;
     private Search search;
 
     // progress fraction per author
@@ -47,14 +46,13 @@ public class AuthorSearch extends Thread {
 
     AssetManager assetManager;
 
-    public AuthorSearch(Activity context, WebView webView, Config cfg, ILogger logger, ArrayList<Author> authorsToSearch, IndexStore indexStore, Search search, AssetManager assetManager) {
+    public AuthorSearch(Activity context, WebView webView, Config cfg, ILogger logger, ArrayList<Author> authorsToSearch, Search search, AssetManager assetManager) {
         this.context = context;
         this.webView = webView;
         this.cfg = cfg;
         this.logger = logger;
 //        this.searchScope = searchScope;
         this.authorsToSearch = authorsToSearch;
-        this.indexStore = indexStore;
         this.search = search;
         this.fractionPerAuthor = (100.0f / authorsToSearch.size());
         this.assetManager = assetManager;
@@ -95,7 +93,7 @@ public class AuthorSearch extends Thread {
                     logger.log(LogLevel.LOW, "Bible search doesn't work yet");
                     continue;
                 }
-                searchAuthor(nextAuthor, pwResults, search, indexStore);
+                searchAuthor(nextAuthor, pwResults, search);
                 pwResults.println("Number of results for " + nextAuthor.getName() + ": " + search.getNumAuthorResults());
                 search.clearAuthorValues();
 
@@ -124,14 +122,17 @@ public class AuthorSearch extends Thread {
 
     }
 
-    private void searchAuthor(Author author, PrintWriter pw, Search search, IndexStore indexStore) {
+    AuthorIndex authorIndex;
+
+    private void searchAuthor(Author author, PrintWriter pw, Search search) {
 
         // get a new search cache
         AuthorSearchCache asc = new AuthorSearchCache();
 
         // get the author index
         search.setProgress("Loading index for " + author.getName());
-        AuthorIndex authorIndex = indexStore.getIndex(author, logger, assetManager);
+        authorIndex = new AuthorIndex(author, logger);
+        authorIndex.loadIndex(assetManager);
 
         logger.log(LogLevel.DEBUG, "\tSearching: " + author.getName() + " for \"" + search.getSearchString() + "\"");
 

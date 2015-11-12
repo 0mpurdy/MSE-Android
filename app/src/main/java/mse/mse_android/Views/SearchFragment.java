@@ -2,13 +2,16 @@ package mse.mse_android.Views;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -52,6 +55,9 @@ public class SearchFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_search, container, false);
 
         this.searchTextBox = (EditText) v.findViewById(R.id.edtxtSearchText);
+        this.progressBar = (ProgressBar) v.findViewById(R.id.pbSearch);
+        this.tvSearchProgress = (TextView) v.findViewById(R.id.tvSearchProgress);
+        this.wvSearchResults = (WebView) v.findViewById(R.id.wvSearchResults);
 
         this.btnSearch = (Button) v.findViewById(R.id.btnSearch);
         btnSearch.setOnClickListener(new View.OnClickListener() {
@@ -63,6 +69,7 @@ public class SearchFragment extends Fragment {
                     logger.openLog();
                     cfg = new Config(logger, mActivity);
                     cfg.refresh();
+
                 } else {
                     logger.openLog();
                 }
@@ -71,20 +78,14 @@ public class SearchFragment extends Fragment {
                 Search search = new Search(mActivity, cfg, logger, searchString, progressBar, tvSearchProgress);
                 search.setSearchScope(SearchScope.SENTENCE);
 
-                Author authorToSearch = Author.AJG;
                 ArrayList<Author> authorsToSearch = new ArrayList<>();
-                authorsToSearch.add(authorToSearch);
+                authorsToSearch.add(Author.AJG);
+                authorsToSearch.add(Author.CAC);
 
-                IndexStore indexStore = new IndexStore(cfg);
-
-                AuthorSearch authorSearch = new AuthorSearch(mActivity, wvSearchResults, cfg, logger, authorsToSearch, indexStore, search, getActivity().getAssets());
+                AuthorSearch authorSearch = new AuthorSearch(mActivity, wvSearchResults, cfg, logger, authorsToSearch, search, getActivity().getAssets());
                 authorSearch.start();
             }
         });
-
-        this.progressBar = (ProgressBar) v.findViewById(R.id.pbSearch);
-        this.tvSearchProgress = (TextView) v.findViewById(R.id.tvSearchProgress);
-        this.wvSearchResults = (WebView) v.findViewById(R.id.wvSearchResults);
 
         return v;
     }
@@ -94,4 +95,5 @@ public class SearchFragment extends Fragment {
         super.onAttach(activity);
         mActivity = activity;
     }
+
 }
