@@ -1,0 +1,24 @@
+mseVersion:3.0.0
+resDir:
+resultsFileName:SearchResults.htm
+searchString:love
+synopsis:false
+beep:false
+splashWindow:false
+autoLoad:false
+fullScan:false
+setup:false
+debugOn:false
+ --- Selected Authors --- 
+JND:false
+FER:false
+CAC:false
+Bible:false
+SMC:false
+Misc:false
+CHM:false
+GRC:false
+JBS:false
+JT:false
+Hymns:false
+AJG:true
