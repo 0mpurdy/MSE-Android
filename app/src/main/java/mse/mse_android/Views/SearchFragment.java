@@ -81,6 +81,14 @@ public class SearchFragment extends Fragment {
                 ArrayList<Author> authorsToSearch = new ArrayList<>();
                 authorsToSearch.add(Author.AJG);
                 authorsToSearch.add(Author.CAC);
+                authorsToSearch.add(Author.CHM);
+                authorsToSearch.add(Author.FER);
+                authorsToSearch.add(Author.GRC);
+                authorsToSearch.add(Author.JBS);
+                authorsToSearch.add(Author.JND);
+                authorsToSearch.add(Author.JT);
+                authorsToSearch.add(Author.SMC);
+                authorsToSearch.add(Author.Misc);
 
                 AuthorSearch authorSearch = new AuthorSearch(mActivity, wvSearchResults, cfg, logger, authorsToSearch, search, getActivity().getAssets());
                 authorSearch.start();

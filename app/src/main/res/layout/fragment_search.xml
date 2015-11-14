@@ -5,21 +5,30 @@
     android:orientation="vertical"
     android:id="@+id/fragment_search">
 
-    <EditText
-        android:id="@+id/edtxtSearchText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ems="10"
-        android:inputType="textPersonName" >
+    <RelativeLayout
+        android:id="@+id/layout_bottom"
+        android:layout_width="fill_parent"
+        android:layout_height = "50dp">
 
-        <requestFocus />
-    </EditText>
+        <EditText
+            android:id="@+id/edtxtSearchText"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:inputType="textPersonName"
+            android:layout_toStartOf="@+id/btnSearch">
 
-    <Button
-        android:id="@+id/btnSearch"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Search"/>
+            <requestFocus />
+        </EditText>
+
+        <Button
+            android:id="@id/btnSearch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:text="Search"/>
+
+    </RelativeLayout>
 
     <ProgressBar
         style="@android:style/Widget.ProgressBar.Horizontal"
@@ -30,7 +39,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="New Text"
+        android:text="Progress"
         android:id="@+id/tvSearchProgress" />
 
     <WebView
