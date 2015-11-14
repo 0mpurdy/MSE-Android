@@ -2,16 +2,13 @@ package mse.mse_android.Views;
 
 import android.app.Activity;
 import android.app.Fragment;
-import android.content.Context;
 import android.os.Bundle;
-import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -19,13 +16,11 @@ import java.util.ArrayList;
 
 import mse.mse_android.R;
 import mse.mse_android.common.Config;
-import mse.mse_android.common.ILogger;
 import mse.mse_android.common.LogLevel;
 import mse.mse_android.common.Logger;
 import mse.mse_android.data.Author;
 import mse.mse_android.data.Search;
 import mse.mse_android.search.AuthorSearch;
-import mse.mse_android.search.IndexStore;
 import mse.mse_android.search.SearchScope;
 
 /**
@@ -45,7 +40,10 @@ public class SearchFragment extends Fragment {
     TextView tvSearchProgress;
     WebView wvSearchResults;
 
+    ArrayList<String> previousUrl;
+
     public SearchFragment() {
+        this.previousUrl = new ArrayList<>();
     }
 
     @Override
@@ -90,7 +88,7 @@ public class SearchFragment extends Fragment {
                 authorsToSearch.add(Author.SMC);
                 authorsToSearch.add(Author.Misc);
 
-                AuthorSearch authorSearch = new AuthorSearch(mActivity, wvSearchResults, cfg, logger, authorsToSearch, search, getActivity().getAssets());
+                AuthorSearch authorSearch = new AuthorSearch(mActivity, wvSearchResults, previousUrl, cfg, logger, authorsToSearch, search, getActivity().getAssets());
                 authorSearch.start();
             }
         });
@@ -102,6 +100,15 @@ public class SearchFragment extends Fragment {
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         mActivity = activity;
+    }
+
+    public boolean goBack() {
+        if (wvSearchResults.canGoBack()) {
+            wvSearchResults.goBack();
+            return true;
+        } else {
+            return false;
+        }
     }
 
 }

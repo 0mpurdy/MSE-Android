@@ -16,7 +16,6 @@ import java.io.*;
 import java.util.ArrayList;
 
 /**
- *
  * @author michael
  */
 public class AuthorSearch extends Thread {
@@ -37,11 +36,14 @@ public class AuthorSearch extends Thread {
     private float fractionPerAuthor;
     private float progress;
 
+    ArrayList<String> previousUrl;
+
     AssetManager assetManager;
 
-    public AuthorSearch(Activity context, WebView webView, Config cfg, ILogger logger, ArrayList<Author> authorsToSearch, Search search, AssetManager assetManager) {
+    public AuthorSearch(Activity context, WebView webView, ArrayList<String> previousUrl, Config cfg, ILogger logger, ArrayList<Author> authorsToSearch, Search search, AssetManager assetManager) {
         this.context = context;
         this.webView = webView;
+        this.previousUrl = previousUrl;
         this.cfg = cfg;
         this.logger = logger;
 //        this.searchScope = searchScope;
@@ -107,7 +109,9 @@ public class AuthorSearch extends Thread {
         context.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                webView.loadUrl("file:///" + context.getFilesDir() + cfg.getResultsFileName());
+                String url = "file:///" + context.getFilesDir() + cfg.getResultsFileName();
+                webView.loadUrl(url);
+                previousUrl.add(url);
             }
         });
 
@@ -264,7 +268,8 @@ public class AuthorSearch extends Thread {
                     }
 
                     // if the volume number is zero then error
-                    if (crtsVolNum == 0 || cefVolNum == 0) logger.log(LogLevel.HIGH, "Invalid references " + authorIndex.getAuthorName());
+                    if (crtsVolNum == 0 || cefVolNum == 0)
+                        logger.log(LogLevel.HIGH, "Invalid references " + authorIndex.getAuthorName());
 
                     // add the reference that is closest to the beginning of the author
                     // only add same references once
@@ -331,7 +336,8 @@ public class AuthorSearch extends Thread {
                     }
 
                     // if the volume number is zero then error
-                    if (crtsVolNum == 0 || cefVolNum == 0) logger.log(LogLevel.HIGH, "Invalid references " + authorIndex.getAuthorName());
+                    if (crtsVolNum == 0 || cefVolNum == 0)
+                        logger.log(LogLevel.HIGH, "Invalid references " + authorIndex.getAuthorName());
 
                     // if on the same volume reference add it
                     // if in the same volume and on adjacent pages
@@ -348,7 +354,7 @@ public class AuthorSearch extends Thread {
                         newListOfReferences.add(crts);
                         crtsIndex++;
                         cefIndex++;
-                    } else if (checkAdjacent(crtsPageNum, cefPageNum)){
+                    } else if (checkAdjacent(crtsPageNum, cefPageNum)) {
                         // volume numbers are equal, they are pointing at pages and they are adjacent
                         // add the crts and increment crts (next crts page may be adjacent to
                         // current cef but not next cef)
@@ -369,15 +375,15 @@ public class AuthorSearch extends Thread {
 
         } // end word has refs
 
-        short[] newReferencesArray =  new short[newListOfReferences.size()];
-        int i=0;
+        short[] newReferencesArray = new short[newListOfReferences.size()];
+        int i = 0;
         for (short newReference : newListOfReferences) newReferencesArray[i++] = newReference;
 
         return newReferencesArray;
     }
 
     private boolean checkAdjacent(short a, short b) {
-        return a == b || (a+1) == b || a == (b+1);
+        return a == b || (a + 1) == b || a == (b + 1);
     }
 
     private boolean searchSingleVolume(PrintWriter pw, AuthorSearchCache asc) {
@@ -482,7 +488,7 @@ public class AuthorSearch extends Thread {
                         cPageNum = Integer.parseInt(asc.line.substring(asc.line.indexOf("=") + 1, asc.line.indexOf('>')));
 
                         // if it is the previous page
-                        if (asc.pageNum == cPageNum  + 1) {
+                        if (asc.pageNum == cPageNum + 1) {
                             asc.prevLine = getLastLineOfPage(br);
 
                             // set found page get page number
@@ -557,7 +563,8 @@ public class AuthorSearch extends Thread {
         }
 
 
-        if (!foundToken) logger.log(LogLevel.LOW, "Did not find token " + asc.author.getCode() + " " + asc.volNum + ":" + asc.pageNum);
+        if (!foundToken)
+            logger.log(LogLevel.LOW, "Did not find token " + asc.author.getCode() + " " + asc.volNum + ":" + asc.pageNum);
     }
 
     private boolean searchScope(ArrayList<String> stringsToSearch, AuthorSearchCache asc, PrintWriter pw, boolean foundToken) {
@@ -622,7 +629,7 @@ public class AuthorSearch extends Thread {
         startOfLastSentencePos = line.lastIndexOf("<a name=");
 
         // no sentence break in line
-        if (startOfLastSentencePos <0) return line;
+        if (startOfLastSentencePos < 0) return line;
 
         startOfLastSentencePos = line.indexOf('>', startOfLastSentencePos) + 1;
         startOfLastSentencePos = line.indexOf('>', startOfLastSentencePos) + 1;
@@ -649,7 +656,7 @@ public class AuthorSearch extends Thread {
 
         while (endOfSentencePos >= 0 && endOfSentencePos < line.length()) {
 
-            endOfSentencePos = line.indexOf("<a name=", startOfSentencePos) -1;
+            endOfSentencePos = line.indexOf("<a name=", startOfSentencePos) - 1;
 
             // if there are no fullstops return the whole line
             if (endOfSentencePos < 0) continue;
@@ -663,7 +670,8 @@ public class AuthorSearch extends Thread {
 
         }
 
-        if (sentences.size() > 0) sentences.set(0, trailingIncompleteSentence + " " + sentences.get(0));
+        if (sentences.size() > 0)
+            sentences.set(0, trailingIncompleteSentence + " " + sentences.get(0));
 
         return sentences;
     }
@@ -745,7 +753,7 @@ public class AuthorSearch extends Thread {
         char[] chars = token.toCharArray();
 
         for (char c : chars) {
-            if(!Character.isLetter(c)) {
+            if (!Character.isLetter(c)) {
                 return false;
             }
         }
@@ -765,7 +773,7 @@ public class AuthorSearch extends Thread {
     private void writeHtmlHeader(PrintWriter pw) {
         pw.println("<!DOCTYPE html>\n\n<html>\n\n<head>\n\t<link rel=\"stylesheet\" type=\"text/css\" href=\"../mseStyle.css\" />\n\t<title>Search Results</title>\n</head>\n");
         pw.println("<body>");
-        pw.println("\t<p><img src=\"../../img/results.gif\"></p>");
+        pw.println("\t<p><img src=\"file:///android_assets/img/results.gif\"></p>");
     }
 
     private void writeHtmlFooter(PrintWriter pw) {
@@ -885,8 +893,9 @@ public class AuthorSearch extends Thread {
                 charPos = endOfWord;
 
                 // if the word has a letter before it or after it then skip it
-                if (startOfWord >= 0 && Character.isLetter(line.charAt(startOfWord -1))) continue;
-                if (endOfWord < line.length() && Character.isLetter(line.charAt(endOfWord))) continue;
+                if (startOfWord >= 0 && Character.isLetter(line.charAt(startOfWord - 1))) continue;
+                if (endOfWord < line.length() && Character.isLetter(line.charAt(endOfWord)))
+                    continue;
 
                 // otherwise mark the word
                 currentCapitalisation = line.substring(startOfWord, endOfWord);
