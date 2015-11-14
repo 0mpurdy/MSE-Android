@@ -575,7 +575,7 @@ public class AuthorSearch extends Thread {
                 if (markedLine.contains("<blockquote>")) markedLine += "</blockquote>";
 
                 pw.println("\t<p>");
-                pw.println("\t\t<a href=\"..\\..\\" + asc.author.getTargetPath(asc.author.getCode() + asc.volNum + ".htm#" + asc.pageNum) + "\"> ");
+                pw.println("\t\t<a href=\"file:///android_asset/" + asc.author.getTargetPath(asc.author.getCode() + asc.volNum + ".htm#" + asc.pageNum) + "\"> ");
                 pw.println(asc.author.getCode() + " volume " + asc.volNum + " page " + asc.pageNum + "</a> ");
                 pw.println(markedLine);
                 pw.println("\t</p>");
@@ -763,7 +763,7 @@ public class AuthorSearch extends Thread {
     }
 
     private void writeHtmlHeader(PrintWriter pw) {
-        pw.println("<!DOCTYPE html>\n\n<html>\n\n<head>\n\t<link rel=\"stylesheet\" type=\"text/css\" href=\"../../mseStyle.css\" />\n\t<title>Search Results</title>\n</head>\n");
+        pw.println("<!DOCTYPE html>\n\n<html>\n\n<head>\n\t<link rel=\"stylesheet\" type=\"text/css\" href=\"../mseStyle.css\" />\n\t<title>Search Results</title>\n</head>\n");
         pw.println("<body>");
         pw.println("\t<p><img src=\"../../img/results.gif\"></p>");
     }
