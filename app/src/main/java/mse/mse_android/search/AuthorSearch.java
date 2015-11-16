@@ -83,7 +83,7 @@ public class AuthorSearch extends Thread {
         resultText.add(writeHtmlFooter());
 
         // try to open and write to the results file
-        File resultsFile = new File(context.getFilesDir() + cfg.getResultsFileName());
+        File resultsFile = new File(context.getFilesDir() + File.separator + cfg.getResultsFileName());
         if (!resultsFile.exists()) {
             resultsFile.getParentFile().mkdirs();
             try {
@@ -111,7 +111,7 @@ public class AuthorSearch extends Thread {
         context.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                String url = "file:///" + context.getFilesDir() + cfg.getResultsFileName();
+                String url = "file:///" + context.getFilesDir() + File.separator + cfg.getResultsFileName();
                 webView.loadUrl(url);
             }
         });

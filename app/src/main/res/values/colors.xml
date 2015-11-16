@@ -3,4 +3,10 @@
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
+    <color name="selected">#CCCCCC</color>
+    <color name="groupItemBackground">#303030</color>
+    <color name="childItemBackground">#505050</color>
+    <color name="childItemSelected">#AAAAAA</color>
+    <drawable name="dChildItemSelected">#AAAAAA</drawable>
+    <drawable name="dChildItemBackground">#505050</drawable>
 </resources>

@@ -25,7 +25,7 @@ public class Logger implements ILogger {
     public Logger(LogLevel logLevel, Activity context) {
 //        this.context = context;
 
-        logFilePath = context.getFilesDir() + logFilePath;
+        logFilePath = context.getFilesDir() + File.separator + logFilePath;
 
         loggingFile = new File(logFilePath);
         try {

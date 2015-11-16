@@ -16,6 +16,7 @@
             android:layout_height="wrap_content"
             android:ems="10"
             android:inputType="textPersonName"
+            android:layout_margin="5dp"
             android:layout_toStartOf="@+id/btnSearch">
 
             <requestFocus />
@@ -26,6 +27,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentRight="true"
+            android:layout_margin="5dp"
             android:text="Search"/>
 
     </RelativeLayout>
@@ -34,12 +36,14 @@
         style="@android:style/Widget.ProgressBar.Horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_margin="5dp"
         android:id="@+id/pbSearch" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Progress"
+        android:layout_margin="5dp"
         android:id="@+id/tvSearchProgress" />
 
     <WebView

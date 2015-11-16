@@ -6,11 +6,14 @@
 package mse.mse_android.common;
 
 import android.app.Activity;
+import android.os.Parcel;
+import android.os.Parcelable;
 
 import mse.mse_android.data.Author;
 import mse.mse_android.search.SearchScope;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
@@ -35,11 +38,6 @@ public class Config {
     private String searchString;
     private SearchScope searchScope;
     private HashMap<String, Boolean> selectedAuthors;
-    private boolean synopsis;
-    private boolean beep;
-    private boolean splashWindow;
-    private boolean autoLoad;
-    private boolean fullScan;
     private boolean setup;
     private boolean debugOn;
 
@@ -48,7 +46,7 @@ public class Config {
         this.logger = logger;
         this.context = context;
 
-        configFilePath = context.getFilesDir() + configFilePath;
+        configFilePath = context.getFilesDir() + File.separator + configFilePath;
 
         File configFile = new File(configFilePath);
         if (!configFile.exists()) {
@@ -141,11 +139,6 @@ public class Config {
         }
         selectedAuthors.put(Author.BIBLE.getCode(), true);
 
-        synopsis = true;
-        beep = false;
-        splashWindow = false;
-        autoLoad = false;
-        fullScan = false;
         setup = false;
         debugOn = false;
 
@@ -165,11 +158,6 @@ public class Config {
                 writeOption(bw,"resDir",resDir);
                 writeOption(bw,"resultsFileName",resultsFileName);
                 writeOption(bw,"searchString",searchString);
-                writeOption(bw,"synopsis",synopsis);
-                writeOption(bw,"beep",beep);
-                writeOption(bw,"splashWindow",splashWindow);
-                writeOption(bw,"autoLoad",autoLoad);
-                writeOption(bw,"fullScan",fullScan);
                 writeOption(bw,"setup",setup);
                 writeOption(bw,"debugOn",debugOn);
 
@@ -200,6 +188,10 @@ public class Config {
                 }
             }
         }
+    }
+
+    public void toggleAuthorSelected(String authorCode) {
+        setSelectedAuthor(authorCode, !isAuthorSelected(authorCode));
     }
 
     private void writeOption(BufferedWriter bw, String optionName, Object option) throws IOException {
@@ -252,7 +244,11 @@ public class Config {
         this.searchScope = searchScope;
     }
 
-    public HashMap<String, Boolean> getSelectedAuthors() {
+    public ArrayList<Author> getSelectedAuthors() {
+        ArrayList<Author> selectedAuthors = new ArrayList<>();
+        for (Author nextAuthor : Author.values()) {
+            if (nextAuthor.isSearchable() && isAuthorSelected(nextAuthor.getCode())) selectedAuthors.add(nextAuthor);
+        }
         return selectedAuthors;
     }
 
@@ -264,7 +260,7 @@ public class Config {
         selectedAuthors.put(authorCode, isSelected);
     }
 
-    public Boolean getSelectedAuthor(String authorCode) {
+    public boolean isAuthorSelected(String authorCode) {
         return selectedAuthors.get(authorCode);
     }
 
@@ -272,7 +268,7 @@ public class Config {
         boolean check = false;
         for (Author nextAuthor : Author.values()) {
             if (nextAuthor != Author.TUNES) {
-                if (getSelectedAuthor(nextAuthor.getCode())) {
+                if (isAuthorSelected(nextAuthor.getCode())) {
                     check = true;
                 }
             }
@@ -280,57 +276,8 @@ public class Config {
         return check;
     }
 
-    public boolean isBeep() {
-        return beep;
-    }
-
-    public void setBeep(boolean beep) {
-        this.beep = beep;
-    }
-
-    public boolean isSplashWindow() {
-        return splashWindow;
-    }
-
-    public void setSplashWindow(boolean splashWindow) {
-        this.splashWindow = splashWindow;
-    }
-
-    public boolean isAutoLoad() {
-        return autoLoad;
-    }
-
-    public void setAutoLoad(boolean autoLoad) {
-        this.autoLoad = autoLoad;
-    }
-
-    public boolean isFullScan() {
-        return fullScan;
-    }
-
-    public void setFullScan(boolean fullScan) {
-        this.fullScan = fullScan;
-    }
-
-    public boolean isDebugOn() {
-        return debugOn;
-    }
-
-    public void setDebugOn(boolean debugOn) {
-        this.debugOn = debugOn;
-    }
-
-    public boolean isSynopsis() {
-        return synopsis;
-    }
-
-    public void setSynopsis(boolean synopsis) {
-        this.synopsis = synopsis;
-    }
-
     public void refresh() {
         setDefaults();
         save();
     }
-
 }
