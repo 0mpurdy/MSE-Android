@@ -16,13 +16,15 @@ public class IndexStore {
     Config cfg;
 
     HashMap<String, AuthorIndex> authorIndexes;
+    AssetManager assetManager;
 
-    public IndexStore(Config cfg) {
+    public IndexStore(Config cfg, AssetManager assetManager) {
         this.cfg = cfg;
+        this.assetManager = assetManager;
         authorIndexes = new HashMap<>();
     }
 
-    public AuthorIndex getIndex(Author author, ILogger logger, AssetManager assetManager) {
+    public AuthorIndex getIndex(ILogger logger, Author author) {
 
         AuthorIndex authorIndex = authorIndexes.get(author.getCode());
 

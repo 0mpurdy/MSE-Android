@@ -6,6 +6,7 @@ package mse.mse_android.common;
 public interface ILogger {
 
     void log(LogLevel logLevel, String message);
+    void log(LogRow logRow);
     void closeLog();
 
 }

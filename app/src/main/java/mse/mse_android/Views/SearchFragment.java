@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import mse.mse_android.R;
 import mse.mse_android.common.Config;
@@ -27,8 +28,11 @@ import mse.mse_android.common.LogLevel;
 import mse.mse_android.common.Logger;
 import mse.mse_android.data.Author;
 import mse.mse_android.data.Search;
-import mse.mse_android.search.AuthorSearch;
+import mse.mse_android.search.AuthorSearchThread;
+import mse.mse_android.search.IndexStore;
+import mse.mse_android.search.SearchProgressThread;
 import mse.mse_android.search.SearchScope;
+import mse.mse_android.search.SearchThread;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -38,6 +42,8 @@ public class SearchFragment extends Fragment {
     private Config mCfg;
     private Logger mLogger;
     private Activity mActivity;
+
+    private IndexStore indexStore;
 
     ArrayList<Author> mSelectedAuthors = new ArrayList<>();
 
@@ -75,38 +81,52 @@ public class SearchFragment extends Fragment {
             @Override
             public void onClick(View v) {
 
+                mLogger.log(LogLevel.INFO, "Started Search ... ");
+
                 InputMethodManager inputManager = (InputMethodManager)
                         mActivity.getSystemService(mActivity.INPUT_METHOD_SERVICE);
 
                 inputManager.hideSoftInputFromWindow((null == mActivity.getCurrentFocus()) ? null : mActivity.getCurrentFocus().getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
 
-                File expansionFile = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "Android" + File.separator + "obb" + File.separator + mActivity.getPackageName());
-                mLogger.log(LogLevel.DEBUG, expansionFile.getAbsolutePath());
-                if (!expansionFile.exists()) {
-                    expansionFile.mkdirs();
-                    mLogger.log(LogLevel.LOW, "Created expansion file");
-                } else {
-                    mLogger.log(LogLevel.DEBUG, "Expansion file already exists");
-                }
+//                File expansionFile = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "Android" + File.separator + "obb" + File.separator + mActivity.getPackageName());
+//                mLogger.log(LogLevel.DEBUG, expansionFile.getAbsolutePath());
+//                if (!expansionFile.exists()) {
+//                    expansionFile.mkdirs();
+//                    mLogger.log(LogLevel.LOW, "Created expansion file");
+//                } else {
+//                    mLogger.log(LogLevel.DEBUG, "Expansion file already exists");
+//                }
+//
+//                try {
+//                    mLogger.log(LogLevel.HIGH, expansionFile.getCanonicalPath());
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//
+//                File deleteFile = new File(mActivity.getFilesDir() + "res");
+//                if (deleteFile.exists()) {
+//                    DeleteRecursive(deleteFile);
+//                    mLogger.log(LogLevel.HIGH, "Deleted file");
+//                }
 
-                try {
-                    mLogger.log(LogLevel.HIGH, expansionFile.getCanonicalPath());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                File deleteFile = new File(mActivity.getFilesDir() + "res");
-                if (deleteFile.exists()) {
-                    DeleteRecursive(deleteFile);
-                    mLogger.log(LogLevel.HIGH, "Deleted file");
+                if (firstSearch) {
+                    indexStore = new IndexStore(mCfg, mActivity.getAssets());
+                    firstSearch = false;
                 }
 
                 String searchString = searchTextBox.getText().toString();
-                Search search = new Search(mActivity, mCfg, mLogger, searchString, progressBar, tvSearchProgress);
-                search.setSearchScope(SearchScope.SENTENCE);
+                Search search = new Search(mActivity, mCfg, mLogger, searchString);
 
-                AuthorSearch authorSearch = new AuthorSearch(mActivity, wvSearchResults, previousUrl, mCfg, mLogger, mSelectedAuthors, search, getActivity().getAssets());
-                authorSearch.start();
+                mLogger.log(LogLevel.INFO, "Searched for: " + searchString);
+
+                AtomicInteger progress = new AtomicInteger();
+
+                SearchProgressThread searchProgressThread = new SearchProgressThread(mActivity, progressBar, tvSearchProgress, progress, mSelectedAuthors.size());
+                searchProgressThread.start();
+
+                // start the thread to search
+                SearchThread searchThread = new SearchThread(mCfg, mLogger, mActivity, wvSearchResults, mSelectedAuthors, indexStore, search, progress);
+                searchThread.start();
             }
         });
 
@@ -163,9 +183,15 @@ public class SearchFragment extends Fragment {
 
     public void clickAuthor(int groupPosition, int childPosition, long id) {
         mLogger.openLog();
+        int i = -1;
+        int j = -1;
+        while (j < childPosition && i < Author.values().length) {
+            i++;
+            if (Author.values()[i].isSearchable()) j++;
+        }
+        if (j<Author.values().length) toggleAuthor(Author.values()[i]);
         mLogger.log(LogLevel.DEBUG, "Clicked " + groupPosition + " " + childPosition + " " + id);
-        mLogger.log(LogLevel.DEBUG, Author.values()[childPosition].getName());
-        toggleAuthor(Author.values()[childPosition]);
+        mLogger.log(LogLevel.DEBUG, Author.values()[i].getName());
         mLogger.closeLog();
     }
 

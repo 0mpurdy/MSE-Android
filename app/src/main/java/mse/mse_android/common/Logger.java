@@ -46,6 +46,14 @@ public class Logger implements ILogger {
         Log.d(logLevel.tag, message);
     }
 
+    public synchronized void log(LogRow logRow) {
+        if (logRow.logLevel.value <= this.logLevel.value) {
+            Date date = new Date();
+            String tag = logRow.logLevel.tag;
+            pwLog.printf("%s [%s] - %s\n", tag, dateFormat.format(date),logRow.message);
+        }
+    }
+
     public void flush() {
         pwLog.flush();
     }

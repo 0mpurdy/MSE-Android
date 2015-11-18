@@ -101,18 +101,23 @@ public class MainActivity extends Activity {
 
         // add options for selecting author
         ArrayList<String> child = new ArrayList<>();
-        child.addAll(getAllAuthorNames());
+        for (Author nextAuthor : Author.values()) {
+            if (nextAuthor.isSearchable()) {
+                child.add(nextAuthor.getName());
+            }
+        }
+//        child.addAll(getAllAuthorNames());
         childItem.add(child);
 
     }
 
-    private ArrayList<String> getAllAuthorNames() {
-        ArrayList<String> authorNames = new ArrayList<>();
-        for (Author nextAuthor : Author.values()) {
-            authorNames.add(nextAuthor.getName());
-        }
-        return authorNames;
-    }
+//    private ArrayList<String> getAllAuthorNames() {
+//        ArrayList<String> authorNames = new ArrayList<>();
+//        for (Author nextAuthor : Author.values()) {
+//            authorNames.add(nextAuthor.getName());
+//        }
+//        return authorNames;
+//    }
 
     private class DrawerItemClickListener implements ExpandableListView.OnChildClickListener {
 

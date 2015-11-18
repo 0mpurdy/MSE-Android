@@ -6,8 +6,6 @@
 package mse.mse_android.common;
 
 import android.app.Activity;
-import android.os.Parcel;
-import android.os.Parcelable;
 
 import mse.mse_android.data.Author;
 import mse.mse_android.search.SearchScope;
@@ -17,7 +15,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
- *
  * @author michael
  */
 public class Config {
@@ -25,28 +22,26 @@ public class Config {
     // the number of times a word has to appear before it is too frequent
     public final int TOO_FREQUENT = 10000;
 
-    private String configFilePath = "Config.txt";
+    private final String configFilePath;
 
     private Logger logger;
 
     private Activity context;
 
     private String mseVersion;
-    //    private String defaultBrowser;
     private String resDir;
     private String resultsFileName;
     private String searchString;
     private SearchScope searchScope;
     private HashMap<String, Boolean> selectedAuthors;
     private boolean setup;
-    private boolean debugOn;
 
     public Config(Logger logger, Activity context) {
 
         this.logger = logger;
         this.context = context;
 
-        configFilePath = context.getFilesDir() + File.separator + configFilePath;
+        configFilePath = context.getFilesDir() + File.separator + "Config.txt";
 
         File configFile = new File(configFilePath);
         if (!configFile.exists()) {
@@ -54,55 +49,44 @@ public class Config {
             setDefaults();
             save();
             return;
-        } else {
-
-            // for now always use defaults
-            setDefaults();
-            save();
-            return;
         }
-//
-//        BufferedReader br = null;
-//        try {
-//
-//            br = new BufferedReader(new FileReader(configFilePath));
-//
-//            mseVersion = getNextOption(br, "mseVersion");
-//            resDir = getNextOption(br, "mseVersion");
-//            resultsFileName = getNextOption(br, "resultsFileName");
-//            searchString = getNextOption(br, "searchString");
-//            synopsis = getNextBooleanOption(br, "synopsis");
-//            beep = getNextBooleanOption(br, "beep");
-//            splashWindow = getNextBooleanOption(br, "splashWindow");
-//            autoLoad = getNextBooleanOption(br, "autoLoad");
-//            fullScan = getNextBooleanOption(br, "fullScan");
-//            setup = getNextBooleanOption(br, "setup");
-//            debugOn = getNextBooleanOption(br, "debugOn");
-//
-//            // skip selected authors line
-//            br.readLine();
-//
-//            selectedAuthors = new HashMap<>();
-//
-//            // for each searchable author
-//            for (Author nextAuthor : Author.values()) {
-//                if (nextAuthor.isSearchable()) {
-//                    String[] splitLine = br.readLine().split(":");
-//                    selectedAuthors.put(splitLine[0], Boolean.parseBoolean(splitLine[1]));
-//                }
-//            }
-//
-//
-//        } catch (IOException | ArrayIndexOutOfBoundsException ex) {
-//            logger.log(LogLevel.LOW, "Error reading config - setting defaults");
-//            setDefaults();
-//        }  finally {
-//            if (br != null) try {
-//                br.close();
-//            } catch (IOException e) {
-//                logger.log(LogLevel.HIGH, "Could not close config file");
-//            }
-//        }
+
+
+        BufferedReader br = null;
+        try {
+
+            br = new BufferedReader(new FileReader(configFilePath));
+
+            mseVersion = getNextOption(br, "mseVersion");
+            resDir = getNextOption(br, "resDir");
+            resultsFileName = getNextOption(br, "resultsFileName");
+            searchString = getNextOption(br, "searchString");
+            searchScope = SearchScope.fromString(getNextOption(br, "searchScope"));
+            if (searchScope == null) searchScope = SearchScope.CLAUSE;
+
+            // skip selected authors line
+            br.readLine();
+
+            selectedAuthors = new HashMap<>();
+
+            // for each searchable author
+            for (Author nextAuthor : Author.values()) {
+                if (nextAuthor.isSearchable()) {
+                    String[] splitLine = br.readLine().split(":");
+                    selectedAuthors.put(splitLine[0], Boolean.parseBoolean(splitLine[1]));
+                }
+            }
+
+        } catch (IOException | ArrayIndexOutOfBoundsException | NullPointerException ex) {
+            logger.log(LogLevel.LOW, "Error reading config - setting defaults");
+            setDefaults();
+        } finally {
+            if (br != null) try {
+                br.close();
+            } catch (IOException e) {
+                logger.log(LogLevel.HIGH, "Could not close config file");
+            }
+        }
 
     }
 
@@ -124,11 +108,9 @@ public class Config {
 
         mseVersion = "3.0.0";
         resDir = File.separator;
-//        defaultBrowser = "/usr/bin/firefox";
-//        defaultBrowser = "C:\\Program Files (x86)\\Mozilla Firefox\\firefox.exe";
         resultsFileName = "SearchResults.htm";
         searchString = "";
-        searchScope = SearchScope.SENTENCE;
+        searchScope = SearchScope.CLAUSE;
 
         // set the selected books to be searched to only the bible
         selectedAuthors = new HashMap<>();
@@ -138,9 +120,7 @@ public class Config {
             }
         }
         selectedAuthors.put(Author.BIBLE.getCode(), true);
-
         setup = false;
-        debugOn = false;
 
     }
 
@@ -154,12 +134,11 @@ public class Config {
 
                 bw = new BufferedWriter(new FileWriter(configFile));
 
-                writeOption(bw,"mseVersion",mseVersion);
-                writeOption(bw,"resDir",resDir);
-                writeOption(bw,"resultsFileName",resultsFileName);
-                writeOption(bw,"searchString",searchString);
-                writeOption(bw,"setup",setup);
-                writeOption(bw,"debugOn",debugOn);
+                writeOption(bw, "mseVersion", mseVersion);
+                writeOption(bw, "resDir", resDir);
+                writeOption(bw, "resultsFileName", resultsFileName);
+                writeOption(bw, "searchString", searchString);
+                writeOption(bw, "searchScope", searchScope.getMenuName());
 
                 bw.write(" --- Selected Authors --- ");
                 bw.newLine();
@@ -167,14 +146,6 @@ public class Config {
                 for (String nextAuthorCode : selectedAuthors.keySet()) {
                     writeOption(bw, nextAuthorCode, selectedAuthors.get(nextAuthorCode).toString());
                 }
-
-//                changed to remove dependecy on gson
-//                Gson gson = new GsonBuilder().setPrettyPrinting().create();
-//                String json = gson.toJson(this);
-//                File f = new File("config.txt");
-//                PrintWriter pw = new PrintWriter(f);
-//                pw.write(json);
-//                pw.close();
 
                 logger.log(LogLevel.DEBUG, "Config saved: " + configFile.getCanonicalPath());
 
@@ -202,14 +173,6 @@ public class Config {
     private void writeOption(BufferedWriter bw, String optionName, String optionValue) throws IOException {
         bw.write(optionName + ":" + optionValue);
         bw.newLine();
-    }
-
-    public void setSetup(boolean setupCheck) {
-        setup = setupCheck;
-    }
-
-    public boolean isSettingUp() {
-        return setup;
     }
 
     public String getMseVersion() {
@@ -247,7 +210,8 @@ public class Config {
     public ArrayList<Author> getSelectedAuthors() {
         ArrayList<Author> selectedAuthors = new ArrayList<>();
         for (Author nextAuthor : Author.values()) {
-            if (nextAuthor.isSearchable() && isAuthorSelected(nextAuthor.getCode())) selectedAuthors.add(nextAuthor);
+            if (nextAuthor.isSearchable() && isAuthorSelected(nextAuthor.getCode()))
+                selectedAuthors.add(nextAuthor);
         }
         return selectedAuthors;
     }
@@ -276,8 +240,17 @@ public class Config {
         return check;
     }
 
+    public void setSetup(boolean setupCheck) {
+        setup = setupCheck;
+    }
+
+    public boolean isSettingUp() {
+        return setup;
+    }
+
     public void refresh() {
         setDefaults();
         save();
     }
+
 }
