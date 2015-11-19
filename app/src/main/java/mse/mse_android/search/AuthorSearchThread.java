@@ -287,7 +287,7 @@ public class AuthorSearchThread extends SingleSearchThread {
                 if (markedLine.contains("<blockquote>")) markedLine += "</blockquote>";
 
                 resultText.add("\t<p>");
-                resultText.add("\t\t<a href=\"..\\..\\" + asc.author.getTargetPath(asc.author.getCode() + asc.volNum + ".htm#" + asc.pageNum) + "\"> ");
+                resultText.add("\t\t<a href=\"file:///android_asset/" + asc.author.getTargetPath(asc.author.getCode() + asc.volNum + ".htm#" + asc.pageNum) + "\"> ");
                 resultText.add(asc.author.getCode() + " volume " + asc.volNum + " page " + asc.pageNum + "</a> ");
                 resultText.add(markedLine);
                 resultText.add("\t</p>");
@@ -692,6 +692,7 @@ public class AuthorSearchThread extends SingleSearchThread {
             if (line.charAt(charPos) == '<') {
                 int tempCharIndex = charPos + 1;
                 while (tempCharIndex < line.length() - 1 && line.charAt(tempCharIndex) != '>') tempCharIndex++;
+                tempCharIndex++;
                 line.replace(charPos, tempCharIndex, "");
             }
         }

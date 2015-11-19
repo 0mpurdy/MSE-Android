@@ -37,6 +37,7 @@ public class NavDrawerAdapter extends BaseExpandableListAdapter {
         this.Childtem = childItem;
         selectedAuthors = new boolean[Author.values().length];
         for (int i=0; i<selectedAuthors.length; i++) selectedAuthors[i] = false;
+        selectedAuthors[0] = true;
     }
 
     public void clickAuthor(int authorIndex) {
@@ -68,7 +69,7 @@ public class NavDrawerAdapter extends BaseExpandableListAdapter {
         }
         TextView text = (TextView) convertView.findViewById(R.id.drawer_list_item_text);
         text.setText(tempChild.get(childPosition));
-        if (selectedAuthors[childPosition]) {
+        if (groupPosition == 0 && selectedAuthors[childPosition]) {
             text.setBackgroundColor(mActivity.getResources().getColor(R.color.childItemSelected));
         } else {
             text.setBackgroundColor(mActivity.getResources().getColor(R.color.childItemBackground));

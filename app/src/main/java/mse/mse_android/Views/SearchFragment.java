@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.os.Bundle;
 import android.os.Environment;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -45,7 +46,7 @@ public class SearchFragment extends Fragment {
 
     private IndexStore indexStore;
 
-    ArrayList<Author> mSelectedAuthors = new ArrayList<>();
+    ArrayList<Author> mSelectedAuthors;
 
     boolean firstSearch = true;
 
@@ -72,21 +73,44 @@ public class SearchFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_search, container, false);
 
         this.searchTextBox = (EditText) v.findViewById(R.id.edtxtSearchText);
+        searchTextBox.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                search();
+                return false;
+            }
+        });
         this.progressBar = (ProgressBar) v.findViewById(R.id.pbSearch);
         this.tvSearchProgress = (TextView) v.findViewById(R.id.tvSearchProgress);
         this.wvSearchResults = (WebView) v.findViewById(R.id.wvSearchResults);
+
+        mSelectedAuthors = new ArrayList<>();
+        mSelectedAuthors.add(Author.JND);
 
         this.btnSearch = (Button) v.findViewById(R.id.btnSearch);
         btnSearch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                search();
+            }
+        });
 
-                mLogger.log(LogLevel.INFO, "Started Search ... ");
+        return v;
+    }
 
-                InputMethodManager inputManager = (InputMethodManager)
-                        mActivity.getSystemService(mActivity.INPUT_METHOD_SERVICE);
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        mActivity = activity;
+    }
 
-                inputManager.hideSoftInputFromWindow((null == mActivity.getCurrentFocus()) ? null : mActivity.getCurrentFocus().getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+    private void search() {
+        mLogger.log(LogLevel.INFO, "Started Search ... ");
+
+        InputMethodManager inputManager = (InputMethodManager)
+                mActivity.getSystemService(mActivity.INPUT_METHOD_SERVICE);
+
+        inputManager.hideSoftInputFromWindow((null == mActivity.getCurrentFocus()) ? null : mActivity.getCurrentFocus().getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
 
 //                File expansionFile = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "Android" + File.separator + "obb" + File.separator + mActivity.getPackageName());
 //                mLogger.log(LogLevel.DEBUG, expansionFile.getAbsolutePath());
@@ -109,34 +133,24 @@ public class SearchFragment extends Fragment {
 //                    mLogger.log(LogLevel.HIGH, "Deleted file");
 //                }
 
-                if (firstSearch) {
-                    indexStore = new IndexStore(mCfg, mActivity.getAssets());
-                    firstSearch = false;
-                }
+        if (firstSearch) {
+            indexStore = new IndexStore(mCfg, mActivity.getAssets());
+            firstSearch = false;
+        }
 
-                String searchString = searchTextBox.getText().toString();
-                Search search = new Search(mActivity, mCfg, mLogger, searchString);
+        String searchString = searchTextBox.getText().toString();
+        Search search = new Search(mActivity, mCfg, mLogger, searchString);
 
-                mLogger.log(LogLevel.INFO, "Searched for: " + searchString);
+        mLogger.log(LogLevel.INFO, "Searched for: " + searchString);
 
-                AtomicInteger progress = new AtomicInteger();
+        AtomicInteger progress = new AtomicInteger();
 
-                SearchProgressThread searchProgressThread = new SearchProgressThread(mActivity, progressBar, tvSearchProgress, progress, mSelectedAuthors.size());
-                searchProgressThread.start();
+        SearchProgressThread searchProgressThread = new SearchProgressThread(mActivity, progressBar, tvSearchProgress, progress, mSelectedAuthors.size());
+        searchProgressThread.start();
 
-                // start the thread to search
-                SearchThread searchThread = new SearchThread(mCfg, mLogger, mActivity, wvSearchResults, mSelectedAuthors, indexStore, search, progress);
-                searchThread.start();
-            }
-        });
-
-        return v;
-    }
-
-    @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-        mActivity = activity;
+        // start the thread to search
+        SearchThread searchThread = new SearchThread(mCfg, mLogger, mActivity, wvSearchResults, mSelectedAuthors, indexStore, search, progress);
+        searchThread.start();
     }
 
     private void copyResultsGif() {
@@ -171,6 +185,10 @@ public class SearchFragment extends Fragment {
         } else {
             return false;
         }
+    }
+
+    public void goToLocation(String location) {
+        wvSearchResults.loadUrl(location);
     }
 
     void DeleteRecursive(File fileOrDirectory) {

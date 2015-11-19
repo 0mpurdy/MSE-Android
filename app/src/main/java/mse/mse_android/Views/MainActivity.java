@@ -93,6 +93,7 @@ public class MainActivity extends Activity {
     private void setGroupOptions(){
         groupItem = new ArrayList<>();
         groupItem.add("Select Author");
+        groupItem.add("Library");
     }
 
     private void setChildOptions() {
@@ -109,6 +110,13 @@ public class MainActivity extends Activity {
 //        child.addAll(getAllAuthorNames());
         childItem.add(child);
 
+        // add items to library
+        child = new ArrayList<>();
+        child.add(Author.BIBLE.getName());
+        child.add(Author.HYMNS.getName());
+        child.add(Author.JND.getName());
+        child.add(Author.CAC.getName());
+        childItem.add(child);
     }
 
 //    private ArrayList<String> getAllAuthorNames() {
@@ -123,9 +131,32 @@ public class MainActivity extends Activity {
 
         @Override
         public boolean onChildClick(ExpandableListView parent, View v, int groupPosition, int childPosition, long id) {
-            searchFragment.clickAuthor(groupPosition, childPosition, id);
-            mNavDrawerAdapter.clickAuthor(childPosition);
-            parent.setItemChecked(childPosition + 1, !parent.isItemChecked(childPosition + 1));
+            // TODO change to author.values.length when all authors added
+            if (groupPosition == 0) {
+                searchFragment.clickAuthor(groupPosition, childPosition, id);
+                mNavDrawerAdapter.clickAuthor(childPosition);
+                parent.setItemChecked(childPosition + 1, !parent.isItemChecked(childPosition + 1));
+            } else {
+
+                // ugly hack until all authors added
+                String location = null;
+                switch (childPosition) {
+                    case 0:
+                        location = Author.BIBLE.getTargetPath(Author.BIBLE.getContentsName() + ".htm");
+                        break;
+                    case 1:
+                        location = Author.HYMNS.getTargetPath(Author.HYMNS.getContentsName() + ".htm");
+                        break;
+                    case 2:
+                        location = Author.JND.getTargetPath(Author.JND.getContentsName() + ".htm");
+                        break;
+                    case 3:
+                        location = Author.CAC.getTargetPath(Author.CAC.getContentsName() + ".htm");
+                        break;
+                }
+
+                searchFragment.goToLocation("file:///android_asset/" + location);
+            }
             return false;
         }
 
