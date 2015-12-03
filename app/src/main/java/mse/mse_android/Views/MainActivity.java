@@ -116,6 +116,8 @@ public class MainActivity extends Activity {
         child.add(Author.HYMNS.getName());
         child.add(Author.JND.getName());
         child.add(Author.CAC.getName());
+        child.add(Author.FER.getName());
+        child.add(Author.WJH.getName());
         childItem.add(child);
     }
 
@@ -142,16 +144,22 @@ public class MainActivity extends Activity {
                 String location = null;
                 switch (childPosition) {
                     case 0:
-                        location = Author.BIBLE.getTargetPath(Author.BIBLE.getContentsName() + ".htm");
+                        location = Author.BIBLE.getTargetPath(Author.BIBLE.getContentsName());
                         break;
                     case 1:
-                        location = Author.HYMNS.getTargetPath(Author.HYMNS.getContentsName() + ".htm");
+                        location = Author.HYMNS.getTargetPath(Author.HYMNS.getContentsName());
                         break;
                     case 2:
-                        location = Author.JND.getTargetPath(Author.JND.getContentsName() + ".htm");
+                        location = Author.JND.getTargetPath(Author.JND.getContentsName());
                         break;
                     case 3:
-                        location = Author.CAC.getTargetPath(Author.CAC.getContentsName() + ".htm");
+                        location = Author.CAC.getTargetPath(Author.CAC.getContentsName());
+                        break;
+                    case 4:
+                        location = Author.FER.getTargetPath(Author.FER.getContentsName());
+                        break;
+                    case 5:
+                        location = Author.WJH.getTargetPath(Author.WJH.getContentsName());
                         break;
                 }
 

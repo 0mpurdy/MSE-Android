@@ -10,7 +10,7 @@ public enum Author {
     JND(3, "JND", "J.N.Darby", "jnd", 52, true, true),
     JBS(4, "JBS", "J.B.Stoney",  "jbs", 17, true, false),
     CHM(5, "CHM", "C.H.Mackintosh", "chm", 18, true, false),
-    FER(6, "FER", "F.E.Raven", "fer", 21, true, false),
+    FER(6, "FER", "F.E.Raven", "fer", 21, true, true),
     CAC(7, "CAC", "C.A.Coates", "cac", 37, true, true),
     JT(8, "JT", "J.Taylor Snr", "jt", 103, true, false),
     GRC(9, "GRC", "G.R.Cowell", "grc", 88, true, false),
@@ -54,7 +54,7 @@ public enum Author {
     }
 
     public String getContentsName() {
-        return folder + "_contents";
+        return code + "-Contents.htm";
     }
 
     public String getIndexFilePath() {
