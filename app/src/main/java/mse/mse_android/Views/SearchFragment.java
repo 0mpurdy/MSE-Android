@@ -10,8 +10,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -42,7 +44,7 @@ public class SearchFragment extends Fragment {
 
     private Config mCfg;
     private Logger mLogger;
-    private Activity mActivity;
+    private MainActivity mActivity;
 
     private IndexStore indexStore;
 
@@ -52,6 +54,7 @@ public class SearchFragment extends Fragment {
 
     EditText searchTextBox;
     Button btnSearch;
+    ImageButton btnMenu;
     ProgressBar progressBar;
     TextView tvSearchProgress;
     WebView wvSearchResults;
@@ -81,11 +84,26 @@ public class SearchFragment extends Fragment {
             }
         });
         this.progressBar = (ProgressBar) v.findViewById(R.id.pbSearch);
-        this.tvSearchProgress = (TextView) v.findViewById(R.id.tvSearchProgress);
         this.wvSearchResults = (WebView) v.findViewById(R.id.wvSearchResults);
+        this.wvSearchResults.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                view.loadUrl(url);
+                return false;
+            }
+        });
 
         mSelectedAuthors = new ArrayList<>();
         mSelectedAuthors.add(Author.JND);
+
+
+        this.btnMenu = (ImageButton) v.findViewById(R.id.menuButton);
+        btnMenu.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                menuClick();
+            }
+        });
 
         this.btnSearch = (Button) v.findViewById(R.id.btnSearch);
         btnSearch.setOnClickListener(new View.OnClickListener() {
@@ -101,7 +119,11 @@ public class SearchFragment extends Fragment {
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
-        mActivity = activity;
+        mActivity = (MainActivity) activity;
+    }
+
+    private void menuClick() {
+        mActivity.openDrawer();
     }
 
     private void search() {
