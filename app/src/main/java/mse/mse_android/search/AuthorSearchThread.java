@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 // mse
 import mse.mse_android.common.*;
 import mse.mse_android.data.*;
+import mse.mse_android.helpers.ReadFileHelper;
 
 
 /**
@@ -49,38 +50,19 @@ public class AuthorSearchThread extends SingleSearchThread {
     @Override
     public void run() {
 
-//        logger.log(LogLevel.DEBUG, "\tStarted Search: \"" + search.getSearchString() + "\" in " + authorsToSearch.toString());
-//        logger.log(LogLevel.DEBUG, "\tOpened file: " + cfg.getResDir() + cfg.getResultsFileName());
-//        resultText.add(writeHtmlHeader());
-//        // for each author to be searched
-//        for (Author nextAuthor : authorsToSearch) {
-//
-//            if (nextAuthor == Author.HYMNS) {
-//                logger.log(LogLevel.LOW, "Hymns search doesn't work yet");
-//                continue;
-//            }
-//            if (nextAuthor == Author.BIBLE) {
-//                logger.log(LogLevel.LOW, "Bible search doesn't work yet");
-//                continue;
-//            }
-
         searchAuthor(authorResults, asc);
-
         authorResults.add("Number of results for " + asc.getAuthorName() + ": " + asc.numAuthorResults);
 
     }
 
     private void searchAuthor(ArrayList<String> resultText, AuthorSearchCache asc) {
 
-        Log.d("[DEBUG   ]", "Started author search " + asc.getAuthorCode());
         searchLog.add(new LogRow(LogLevel.DEBUG, "\tSearching: " + asc.author.getName() + " for \"" + asc.getSearchString() + "\""));
 
-        // get the search words
         asc.setSearchWords();
+        addAuthorHeader(resultText);
 
         // print the title of the author search results and search words
-        resultText.add("\n\t<hr>\n\t<h1>Results of search through " + asc.author.getName() + "</h1>");
-        resultText.add("\n\t<p>\n\t\tSearched: " + asc.printableSearchWords() + "\n\t</p>");
         searchLog.add(new LogRow(LogLevel.TRACE, "\tSearch strings: " + asc.printableSearchWords()));
 
         /* Search all the words to make sure that all the search tokens are in the author's
@@ -99,31 +81,20 @@ public class AuthorSearchThread extends SingleSearchThread {
         if ((asc.getLeastFrequentToken() != null) && (errorNum % 4 < 2)) {
             // at least one searchable token and all tokens in author index
 
-            // add all the references for the least frequent token to the referencesToSearch array
             asc.setReferencesToSearch();
-
-            // if there is more than one infrequent word
-            // refine the number of references (combine if wild,
-            // if not wild only use references where each word is found within 1 page
             asc.refineReferences();
-
-            // TODO what is option.fullScan
-
-            // if there are still any references to search
 
             // should be at least two references (volume and page to start)
             if (asc.referencesToSearch.length > 1) {
-
                 // process each page that contains a match
                 asc.refIndex = 0;
-
-                // first two references should be volume and page
                 asc.getNextPage();
-
                 boolean volumeSuccess = true;
 
                 // for each reference
                 while (asc.volNum != 0 && volumeSuccess) {
+
+                    if (asc.author.equals(Author.HYMNS)) addHymnBookTitle(resultText);
 
                     volumeSuccess = searchSingleVolume(resultText, asc);
 
@@ -149,98 +120,89 @@ public class AuthorSearchThread extends SingleSearchThread {
 
     }
 
+    private void addHymnBookTitle(ArrayList<String> resultText) {
+        resultText.add(String.format("\t\t<p class=\"%s\">\n\t\t\t<a href=\"%s\">%s</a>",
+                "results-hymnbook-name",
+                "file:///android_asset/" + asc.author.getTargetPath(getVolumeName()),
+                HymnBook.values()[asc.volNum - 1].getName()));
+    }
+
+    private void addAuthorHeader(ArrayList<String> resultText) {
+        resultText.add("\n\t<hr>\n\t<h1>Results of search through " + asc.author.getName() + "</h1>");
+        resultText.add("\n\t<p>\n\t\tSearched: " + asc.printableSearchWords() + "\n\t</p>");
+    }
+
     private boolean searchSingleVolume(ArrayList<String> resultText, AuthorSearchCache asc) {
         // for each volume
 
         searchLog.add(new LogRow(LogLevel.TRACE, "\tVol: " + asc.volNum));
 
-        int cPageNum = 0;
+        int cPageNum;
         final int cVolNum = asc.volNum;
 
-        // get file name
-        String filename = /*mActivity.getFilesDir().getParent() + File.separator*/ "";
-        if (asc.author.equals(Author.BIBLE)) {
-            filename += asc.author.getTargetPath(BibleBook.values()[asc.volNum].getName() + ".htm");
-        } else {
-            filename += asc.author.getVolumePath(asc.volNum);
-        }
-
         // read the file
-        BufferedReader br = null;
+        ReadFileHelper rf = new ReadFileHelper(mActivity, asc.author, asc.volNum, true);
         try {
 
-            br = new BufferedReader(new InputStreamReader(mActivity.getAssets().open(filename)));
-
             // update progress
-//            double authorOffset = (authorsToSearch.indexOf(author));
-//            double authorProgess = ((double) volNum / author.getNumVols());
-//            double progress = (fractionPerAuthor * authorOffset) + (fractionPerAuthor * authorProgess);
-//            progress = (fractionPerAuthor * (authorsToSearch.indexOf(asc.author))) + (fractionPerAuthor * ((double) asc.volNum / asc.author.getNumVols()));
-//            search.setProgress("Searching " + asc.author.getName() + " volume " + asc.volNum, progress);
             progress.addAndGet(1000 / asc.author.getNumVols());
 
             // line should not be null when first entering loop
-            asc.line = br.readLine();
+            asc.line = rf.readLine();
 
             while (asc.volNum == cVolNum) {
                 // while still in the same volume
                 // loop through references
 
-                asc.prevLine = "";
-
                 // skip to next page and get the last line of the previous page
-                cPageNum = findNextPage(asc, br);
+                cPageNum = findNextPage(asc, rf);
 
                 // if the page number is 0 log the error and break out
                 if (cPageNum == 0) {
-                    searchLog.add(new LogRow(LogLevel.HIGH, "Could not find reference " + asc.author.getCode() + " " + asc.volNum + ":" + asc.pageNum));
+                    searchLog.add(new LogRow(LogLevel.HIGH, "Could not find reference " + getShortReadableReference()));
                     return false;
                 }
 
-                // for each paragraph in the page
-                // skip a line and check if the next line is a heading or paragraph
-                br.readLine();
-                asc.tempLine = br.readLine();
-                if (asc.tempLine == null) {
-                    searchLog.add(new LogRow(LogLevel.HIGH, "NULL line " + asc.author.getCode() + "vol " + asc.volNum + ":" + asc.pageNum));
-                } else {
-                    searchSinglePage(resultText, br, asc);
-                }
-                asc.line = asc.tempLine;
+                asc.currentSectionHeader = getFirstSectionHeader(rf);
 
-                // clear the previousLine
-                asc.prevLine = "";
+                searchSinglePage(resultText, rf, asc);
+
+                asc.line = asc.currentSectionHeader;
 
                 // get the next reference
                 asc.getNextPage();
 
+                // if the current page is not the page before the next reference clear
+                // previous line
+                if (cPageNum != asc.pageNum - 1) {
+                    asc.prevLine = "";
+                }
+
             } // finished references in volume
 
         } catch (IOException ioe) {
-            searchLog.add(new LogRow(LogLevel.HIGH, "Couldn't read " + asc.author.getTargetPath(filename) + " " + asc.volNum + ":" + asc.pageNum));
+            searchLog.add(new LogRow(LogLevel.HIGH, "Couldn't read " + rf.getFilePath() + " " + asc.volNum + ":" + asc.pageNum));
             Log.d("[BAD     ]", ioe.getMessage());
             ioe.printStackTrace();
             return false;
         } finally {
-            try {
-                if (br != null) br.close();
-            } catch (IOException ioe) {
-                searchLog.add(new LogRow(LogLevel.HIGH, "Could not close file " + filename));
-            }
+            rf.close();
         }
 
         return true;
 
     }
 
-    private void searchSinglePage(ArrayList<String> resultText, BufferedReader br, AuthorSearchCache asc) throws IOException {
+    private void searchSinglePage(ArrayList<String> resultText, ReadFileHelper rf, AuthorSearchCache asc) throws IOException {
 
         boolean foundToken = false;
 
-        // while still on the same page (class != page-number)
-        while (asc.tempLine.contains("class=\"heading\"") || asc.tempLine.contains("class=\"paragraph\"") || asc.tempLine.contains("class=\"footnote\"")) {
+        asc.setVerseNum(0);
 
-            asc.line = br.readLine();
+        // while still on the same page (class != page-number)
+        while (isNextSectionSearchable(asc.currentSectionHeader)) {
+
+            asc.line = getNextSection(rf);
 
             ArrayList<String> stringsToSearch = new ArrayList<>();
 
@@ -251,22 +213,48 @@ public class AuthorSearchThread extends SingleSearchThread {
                 stringsToSearch.add(asc.line);
             }
 
+            asc.incrementVerseNum();
+
             // search the scope
             foundToken = searchScope(resultText, stringsToSearch, asc, foundToken);
 
-            // set the current line as the previous line if it is a paragraph
-            if (asc.tempLine.contains("class=\"paragraph\"")) {
+            if (asc.author.equals(Author.BIBLE)) {
+                resultText = asc.finishSearchingSingleBibleScope(removeHtml(asc.line), resultText, foundToken);
+                if (asc.getSearchScope() == SearchScope.CLAUSE) {
+                    foundToken = false;
+                }
+            }
+
+            // set the current line as the previous line if it is searchable
+            if (isNextSectionSearchable(asc.currentSectionHeader)) {
                 asc.prevLine = asc.line;
             } else {
                 asc.prevLine = "";
             }
 
-            br.readLine();
-            asc.tempLine = br.readLine();
+            asc.currentSectionHeader = getNextSectionHeader(rf);
         }
 
-        if (!foundToken)
-            searchLog.add(new LogRow(LogLevel.DEBUG, "Did not find token " + asc.author.getCode() + " " + asc.volNum + ":" + asc.pageNum));
+        if (!foundToken) {
+            if (asc.getInfrequentTokens().size() > 1) {
+                searchLog.add(new LogRow(LogLevel.DEBUG, "Did not find token " + getShortReadableReference()));
+            } else {
+                searchLog.add(new LogRow(LogLevel.LOW, "Did not find token " + getShortReadableReference()));
+            }
+        }
+    }
+
+    private boolean isNextSectionSearchable(String sectionHeader) {
+
+        if (asc.author.isMinistry()) {
+            return sectionHeader.contains("class=\"heading\"") || sectionHeader.contains("class=\"paragraph\"") || sectionHeader.contains("class=\"footnote\"");
+        } else if (asc.author.equals(Author.BIBLE)) {
+            return sectionHeader.contains("<tr");
+        } else if (asc.author.equals(Author.HYMNS)) {
+            return sectionHeader.contains("class=\"verse-number\"");
+        } else {
+            return false;
+        }
     }
 
     private boolean searchScope(ArrayList<String> resultText, ArrayList<String> stringsToSearch, AuthorSearchCache asc, boolean foundToken) {
@@ -275,8 +263,8 @@ public class AuthorSearchThread extends SingleSearchThread {
 
             // if the current scope contains all search terms mark them and print it out (or one if it is a wildcard search)
             SearchScope tempSearchScope = asc.getSearchScope();
-            if (asc.getWildSearch() && checkSentenceSearch(scope, asc) ||
-                    (tempSearchScope.equals(SearchScope.SENTENCE)) && checkSentenceSearch(scope, asc) ||
+            boolean validSentence = (tempSearchScope.equals(SearchScope.SENTENCE));
+            if (validSentence && checkSentenceSearch(scope, asc) ||
                     asc.getSearchScope().equals(SearchScope.CLAUSE) && clauseSearch(tokenizeLine(scope, asc), asc.getSearchTokens())) {
 
                 foundToken = true;
@@ -286,17 +274,182 @@ public class AuthorSearchThread extends SingleSearchThread {
                 // close any opened blockquote tags
                 if (markedLine.contains("<blockquote>")) markedLine += "</blockquote>";
 
-                resultText.add("\t<p>");
-                resultText.add("\t\t<a href=\"file:///android_asset/" + asc.author.getTargetPath(asc.author.getCode() + asc.volNum + ".htm#" + asc.pageNum) + "\"> ");
-                resultText.add(asc.author.getCode() + " volume " + asc.volNum + " page " + asc.pageNum + "</a> ");
-                resultText.add(markedLine);
-                resultText.add("\t</p>");
+                addResultText(resultText, markedLine);
 
                 asc.incrementResults();
             }
         }
 
         return foundToken;
+    }
+
+
+    private void addResultText(ArrayList<String> resultText, String markedLine) {
+
+        if (asc.author.isMinistry()) {
+            resultText.add("\t<p>");
+            resultText.add("\t\t<a href=\"file:///android_asset/" + asc.author.getTargetPath(getVolumeName() + "#" + asc.pageNum) + "\"> "
+                    + getReadableReference() + "</a> ");
+            resultText.add(markedLine);
+            resultText.add("\t</p>");
+        } else if (asc.author.equals(Author.BIBLE)) {
+
+            if (!asc.isWrittenBibleSearchTableHeader()) {
+                resultText.add("\t<p><a href=\"file:///android_asset/" + asc.author.getTargetPath(getVolumeName() + "#" + asc.pageNum + ":" + asc.getVerseNum()) + "\"> "
+                        + getReadableReference() + "</a></p>");
+                resultText.add("\t<table class=\"bible-searchResult\">");
+                resultText.add("\t\t<tr>");
+                asc.setWrittenBibleSearchTableHeader(true);
+                if (!asc.isSearchingDarby()) {
+                    resultText.add("\t\t\t<td class=\"mse-half\">" + asc.previousDarbyLine + "</td>");
+                }
+            }
+
+            if (asc.isSearchingDarby()) {
+
+                resultText.add("\t\t\t<td class=\"mse-half\">" + markedLine + "</td>");
+
+            } else {
+
+                resultText.add("\t\t\t<td class=\"mse-half\">" + markedLine + "</td>");
+
+            }
+
+        } else if (asc.author.equals(Author.HYMNS)) {
+
+            resultText.add("\t<p>");
+            resultText.add("\t\t<a href=\"file:///android_asset/" + asc.author.getTargetPath(getVolumeName() + "#" + asc.pageNum) + "\"> "
+                    + getReadableReference() + "</a> ");
+            resultText.add("<blockquote>" + markedLine + "</blockquote>");
+            resultText.add("\t</p>");
+        }
+
+    }
+
+    private String getReadableReference() {
+        if (asc.author.isMinistry()) {
+            return asc.author.getCode() + " volume " + asc.volNum + " page " + asc.pageNum;
+        } else if (asc.author.equals(Author.BIBLE)) {
+            return BibleBook.values()[asc.volNum - 1].getName() + " chapter " + asc.pageNum + ":" + asc.getVerseNum();
+        } else if (asc.author.equals(Author.HYMNS)) {
+            return Integer.toString(asc.pageNum);
+        }
+
+        return "";
+    }
+
+    private String getVolumeName() {
+        if (asc.author.isMinistry()) {
+            return asc.author.getCode() + asc.volNum + ".htm";
+        } else if (asc.author.equals(Author.BIBLE)) {
+            return BibleBook.values()[asc.volNum - 1].getName() + ".htm";
+        } else if (asc.author.equals(Author.HYMNS)) {
+            return HymnBook.values()[asc.volNum - 1].getOutputFilename();
+        } else {
+            return "";
+        }
+    }
+
+    private String getFirstSectionHeader(ReadFileHelper rf) throws IOException {
+        if (asc.author.isMinistry()) {
+            // skip a line
+            rf.readLine();
+            return rf.readLine();
+        } else if (asc.author.equals(Author.BIBLE)) {
+
+            // skip synopsis
+            rf.readLines(6);
+
+            return rf.readLine();
+
+        } else if (asc.author.equals(Author.HYMNS)) {
+
+            // skip author and metre
+            rf.readLines(7);
+
+            return rf.readLine();
+
+        }
+
+        return null;
+
+    }
+
+    private String getNextSectionHeader(ReadFileHelper rf) throws IOException {
+        // returns the line that contains the class of the next section
+
+        if (asc.author.isMinistry()) {
+            // skip a line
+            rf.readLine();
+            return rf.readLine();
+        } else if (asc.author.equals(Author.BIBLE)) {
+
+            // if still in same section do not change section header
+            if (!asc.isSearchingDarby()) return asc.currentSectionHeader;
+
+            // skip a line
+            rf.readLine();
+
+            return rf.readLine();
+
+        } else if (asc.author.equals(Author.HYMNS)) {
+
+            // debug counter for number of times called
+            int i = 0;
+            while (!rf.readLine().contains("class")) {
+                i++;
+            }
+
+            return rf.getCurrentLine();
+
+        }
+
+        return null;
+
+    }
+
+    private String getNextSection(ReadFileHelper rf) throws IOException {
+
+        if (asc.author.isMinistry()) {
+            return rf.readLine();
+        } else if (asc.author.equals(Author.BIBLE)) {
+            String line = "";
+            if (asc.isSearchingDarby()) {
+
+                // skip verse number
+                rf.readLine();
+
+                // read jnd
+                line = rf.readLine();
+
+            } else {
+                line = rf.readLine();
+            }
+            return line;
+        } else if (asc.author.equals(Author.HYMNS)) {
+
+            // skip verse anchor tag
+            rf.readLines(3);
+
+            String output = "";
+
+            if (asc.volNum == 2 && asc.pageNum == 456) {
+                Log.d("this", "that");
+            }
+
+            try {
+                while (!rf.readLine().contains("</td>")) {
+                    output += rf.getCurrentLine();
+                }
+            } catch (NullPointerException npe) {
+                Log.d("[BAD   ]", getShortReadableReference());
+            }
+
+            return output;
+
+        }
+
+        return null;
     }
 
     // check sentence search
@@ -359,7 +512,161 @@ public class AuthorSearchThread extends SingleSearchThread {
 
     }
 
-    private int findNextPage(AuthorSearchCache asc, BufferedReader br) throws IOException {
+    private int findNextPage(AuthorSearchCache asc, ReadFileHelper rf) throws IOException {
+        // set the prevLine in asc to the last line of the previous page
+        // return the page number of the next page
+        // asc.Line is the page number and br is at the line of the current page number
+
+        if (asc.author.equals(Author.BIBLE)) {
+            return findNextBiblePage(asc, rf);
+        } else if (asc.author.equals(Author.HYMNS)) {
+            return findNextHymnPage(asc, rf);
+        } else {
+            return findNextMinistryPage(asc, rf);
+        }
+
+    }
+
+    private int findNextHymnPage(AuthorSearchCache asc, ReadFileHelper rf) throws IOException {
+
+        int cPageNum = 0;
+        boolean foundPage = false;
+
+        // clear the previous line
+        asc.prevLine = "";
+
+        // read until page number = page ref
+        // or if page number is page before next reference get the last line
+        while (!foundPage) {
+
+            if (asc.line != null) {
+
+                if (asc.line.contains("<td class=\"hymn-number\">")) {
+                    asc.line = rf.readLine();
+
+                    try {
+
+                        // get the current page's number
+                        cPageNum = getPageNumber(asc.line, "=", ">");
+
+                        if (asc.pageNum == cPageNum) {
+                            return cPageNum;
+                        }
+
+                    } catch (NumberFormatException nfe) {
+                        searchLog.add(new LogRow(LogLevel.HIGH, "Error formatting page number in search: " + asc.author.getCode() + " " + asc.volNum + ":" + cPageNum));
+                        return 0;
+                    }
+                }
+            } else {
+                searchLog.add(new LogRow(LogLevel.HIGH, "NULL line when reading " + getShortReadableReference()));
+                break;
+            }
+            asc.line = rf.readLine();
+
+        } // found start of page
+
+        // shouldn't reach here
+        return 0;
+    }
+
+    private int getPageNumber(String line, String splitStart, String splitEnd) {
+        int start = line.indexOf(splitStart) + splitStart.length();
+        int end = line.indexOf(splitEnd, start);
+        return Integer.parseInt(line.substring(start, end));
+    }
+
+    private int findNextBiblePage(AuthorSearchCache asc, ReadFileHelper rf) throws IOException {
+
+        int cPageNum = 0;
+        boolean foundPage = false;
+
+        // clear the previous line
+        asc.prevLine = "";
+
+        // read until page number = page ref
+        // or if page number is page before next reference get the last line
+        while (!foundPage) {
+
+            if (asc.line != null) {
+
+                if (asc.line.contains("<td colspan=\"3\" class=\"chapterTitle\">")) {
+
+                    try {
+
+                        // get the current page's number
+                        int startIndex = asc.line.indexOf("name=") + 5;
+                        int endIndex = asc.line.indexOf('>', startIndex);
+                        String cPageNumStr = asc.line.substring(startIndex, endIndex);
+                        cPageNum = Integer.parseInt(cPageNumStr);
+
+                        // if it is the previous page
+                        if (asc.pageNum == cPageNum + 1) {
+                            asc.prevLine = getLastLineOfBiblePage(rf);
+
+                            // skip close and open of table and open of row
+                            rf.readLines(3);
+
+                            // set found page get page number
+                            asc.line = rf.readLine();
+
+                            startIndex = asc.line.indexOf("name=") + 5;
+                            endIndex = asc.line.indexOf('>', startIndex);
+                            cPageNumStr = asc.line.substring(startIndex, endIndex);
+                            cPageNum = Integer.parseInt(cPageNumStr);
+
+                            if (asc.pageNum == cPageNum) {
+                                return cPageNum;
+                            } else {
+                                // error next page not after previous page
+                                searchLog.add(new LogRow(LogLevel.LOW, "Couldn't find search page: " + asc.author.getCode() + " " + asc.volNum + ":" + asc.pageNum));
+                                return 0;
+                            }
+                        } else if (asc.pageNum == cPageNum) {
+                            return cPageNum;
+                        }
+                    } catch (NumberFormatException nfe) {
+                        searchLog.add(new LogRow(LogLevel.HIGH, "Error formatting page number in search: " + asc.author.getCode() + " " + asc.volNum + ":" + cPageNum));
+                        return 0;
+                    }
+                }
+            } else {
+                searchLog.add(new LogRow(LogLevel.HIGH, "NULL line when reading " + getShortReadableReference()));
+                break;
+            }
+            asc.line = rf.readLine();
+
+        } // found start of page
+
+        // shouldn't reach here
+        return 0;
+    }
+
+    private String getLastLineOfBiblePage(ReadFileHelper rf) throws IOException {
+        // returns the last darby line of the bible and moves
+        // the buffered reader pointer to point at the end of the chapter
+        // (empty line before </table>)
+
+        // skip synopsis
+        rf.readLines(6);
+
+        // while still on the page get the darby line
+        String darbyLine = "";
+        while ((rf.readLine()).contains("<tr")) {
+            // skip verse number
+            rf.readLine();
+
+            // set the line
+            darbyLine = rf.readLine();
+
+            // skip kjv and end of row tag
+            rf.readLines(2);
+        }
+
+        return darbyLine;
+    }
+
+    private int findNextMinistryPage(AuthorSearchCache asc, ReadFileHelper rf) throws IOException {
 
         int cPageNum = 0;
         boolean foundPage = false;
@@ -374,7 +681,7 @@ public class AuthorSearchThread extends SingleSearchThread {
             if (asc.line != null) {
 
                 if (asc.line.contains("class=\"page-number\"")) {
-                    asc.line = br.readLine();
+                    asc.line = rf.readLine();
 
                     try {
 
@@ -383,16 +690,15 @@ public class AuthorSearchThread extends SingleSearchThread {
 
                         // if it is the previous page
                         if (asc.pageNum == cPageNum + 1) {
-                            asc.prevLine = getLastLineOfPage(br);
+                            asc.prevLine = getLastLineOfPage(rf);
 
                             // set found page get page number
-                            asc.line = br.readLine();
+                            asc.line = rf.readLine();
 
                             // skip any footnotes
                             while (asc.line.contains("class=\"footnote\"")) {
-                                br.readLine();
-                                br.readLine();
-                                asc.line = br.readLine();
+                                rf.readLines(2);
+                                asc.line = rf.readLine();
                             }
 
                             cPageNum = Integer.parseInt(asc.line.substring(asc.line.indexOf("=") + 1, asc.line.indexOf('>')));
@@ -416,7 +722,7 @@ public class AuthorSearchThread extends SingleSearchThread {
                 searchLog.add(new LogRow(LogLevel.HIGH, "NULL line when reading " + asc.author.getCode() + " vol " + asc.volNum + " page " + asc.pageNum));
                 break;
             }
-            asc.line = br.readLine();
+            asc.line = rf.readLine();
 
         } // found start of page
 
@@ -424,26 +730,26 @@ public class AuthorSearchThread extends SingleSearchThread {
         return 0;
     }
 
-    private String getLastLineOfPage(BufferedReader br) throws IOException {
+    private String getLastLineOfPage(ReadFileHelper rf) throws IOException {
 
         // for each paragraph in the page
         // skip a line and check if the next line is a heading or paragraph
-        br.readLine();
+        rf.readLine();
 
-        String tempLine = br.readLine();
+        String tempLine = rf.readLine();
         String lastLine = "";
 
         // while not the last line
         while (tempLine.contains("class=\"heading\"") || tempLine.contains("class=\"paragraph\"") || tempLine.contains("class=\"footnote\"")) {
 
             // read the line of text
-            lastLine = br.readLine();
+            lastLine = rf.readLine();
 
             // skip the </div> tag line
-            br.readLine();
+            rf.readLine();
 
             // read the next line class
-            tempLine = br.readLine();
+            tempLine = rf.readLine();
         }
 
         return lastLine;
@@ -453,6 +759,8 @@ public class AuthorSearchThread extends SingleSearchThread {
     int startOfLastSentencePos;
 
     private String getTrailingIncompleteSentence(String line) {
+
+        if (asc.author.equals(Author.BIBLE)) return line;
 
         if (line.isEmpty()) return "";
 
@@ -503,7 +811,8 @@ public class AuthorSearchThread extends SingleSearchThread {
 
         }
 
-        if (sentences.size() > 0) sentences.set(0, trailingIncompleteSentence + " " + sentences.get(0));
+        if (sentences.size() > 0)
+            sentences.set(0, trailingIncompleteSentence + " " + sentences.get(0));
 
         return sentences;
     }
@@ -534,8 +843,8 @@ public class AuthorSearchThread extends SingleSearchThread {
             line = lineBuilder.toString();
         }
 
-        // split the line into tokens (words) by " " characters
-        return tokenizeArray(line.split(" "), asc.getAuthorCode(), asc.volNum, asc.pageNum);
+        // split the line into tokens (words) by non-word characters
+        return tokenizeArray(line.split("[\\W]"), asc.getAuthorCode(), asc.volNum, asc.pageNum);
     }
 
     String[] newTokensArray;
@@ -686,16 +995,10 @@ public class AuthorSearchThread extends SingleSearchThread {
     private String markLine(StringBuilder line, String[] words) {
         // highlight all the search words in the line with an html <mark/> tag
 
-        // remove any html already in the page
+        // remove any html already in the line
         charPos = 0;
-        while (++charPos < line.length()) {
-            if (line.charAt(charPos) == '<') {
-                int tempCharIndex = charPos + 1;
-                while (tempCharIndex < line.length() - 1 && line.charAt(tempCharIndex) != '>') tempCharIndex++;
-                tempCharIndex++;
-                line.replace(charPos, tempCharIndex, "");
-            }
-        }
+
+        if (!asc.author.equals(Author.HYMNS)) line = removeHtml(line);
 
         for (String word : words) {
 
@@ -710,7 +1013,8 @@ public class AuthorSearchThread extends SingleSearchThread {
 
                 // if the word has a letter before it or after it then skip it
                 if (startOfWord >= 0 && Character.isLetter(line.charAt(startOfWord - 1))) continue;
-                if (endOfWord < line.length() && Character.isLetter(line.charAt(endOfWord))) continue;
+                if (endOfWord < line.length() && Character.isLetter(line.charAt(endOfWord)))
+                    continue;
 
                 // otherwise mark the word
                 currentCapitalisation = line.substring(startOfWord, endOfWord);
@@ -722,6 +1026,38 @@ public class AuthorSearchThread extends SingleSearchThread {
         }
 
         return line.toString();
+    }
+
+
+    private String removeHtml(String line) {
+        return removeHtml(new StringBuilder(line)).toString();
+    }
+
+    private StringBuilder removeHtml(StringBuilder line) {
+        int charPos = -1;
+
+        while (++charPos < line.length()) {
+            if (line.charAt(charPos) == '<') {
+                int tempCharIndex = charPos + 1;
+                while (tempCharIndex < line.length() - 1 && line.charAt(tempCharIndex) != '>')
+                    tempCharIndex++;
+                tempCharIndex++;
+                line.replace(charPos, tempCharIndex, "");
+            }
+        }
+
+        return line;
+    }
+
+    public String getShortReadableReference() {
+        if (asc.author.isMinistry()) {
+            return asc.author.getCode() + "vol " + asc.volNum + ":" + asc.pageNum;
+        } else if (asc.author.equals(Author.BIBLE)) {
+            return BibleBook.values()[asc.volNum - 1].getName() + " " + asc.pageNum + ":" + asc.getVerseNum();
+        } else if (asc.author.equals(Author.HYMNS)) {
+            return HymnBook.values()[asc.volNum -1].getName() + " " + asc.pageNum + ":" + asc.getVerseNum();
+        }
+        return "Can't get short readable reference";
     }
 
     @Override

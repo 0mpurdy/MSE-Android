@@ -34,7 +34,6 @@ public class MainActivity extends Activity {
     private ExpandableListView mDrawerList;
     private NavDrawerAdapter mNavDrawerAdapter;
 
-    private String[] mPlanetTitles;
     private String[] mAuthorList;
 
     private ArrayList<String> groupItem;
@@ -44,6 +43,28 @@ public class MainActivity extends Activity {
 
     public MainActivity() {
     }
+
+//    private static class XAPKFile {
+//        public final boolean mIsMain;
+//        public final int mFileVersion;
+//        public final long mFileSize;
+//
+//        XAPKFile(boolean isMain, int fileVersion, long fileSize) {
+//            mIsMain = isMain;
+//            mFileVersion = fileVersion;
+//            mFileSize = fileSize;
+//        }
+//    }
+//
+//    private static final XAPKFile[] xAPKS = {
+//            new XAPKFile(
+//                    true, // true signifies a main file
+//                    2, // the version of the APK that the file was uploaded
+//                    // against
+//                    139402018L // the length of the zipfile in bytes right click on you expansion file and get the size in bytes, size must be same as zip size
+//            ),
+//
+//    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,21 +125,17 @@ public class MainActivity extends Activity {
         // add options for selecting author
         ArrayList<String> child = new ArrayList<>();
         for (Author nextAuthor : Author.values()) {
-            if (nextAuthor.isSearchable()) {
+            if (nextAuthor.isSearchable())
                 child.add(nextAuthor.getName());
-            }
         }
 //        child.addAll(getAllAuthorNames());
         childItem.add(child);
 
         // add items to library
         child = new ArrayList<>();
-        child.add(Author.BIBLE.getName());
-        child.add(Author.HYMNS.getName());
-        child.add(Author.JND.getName());
-        child.add(Author.CAC.getName());
-        child.add(Author.FER.getName());
-        child.add(Author.WJH.getName());
+        for (Author nextAuthor : Author.values()) {
+            if (nextAuthor.isSearchable()) child.add(nextAuthor.getName());
+        }
         childItem.add(child);
     }
 
@@ -141,28 +158,14 @@ public class MainActivity extends Activity {
                 parent.setItemChecked(childPosition + 1, !parent.isItemChecked(childPosition + 1));
             } else {
 
-                // ugly hack until all authors added
                 String location = null;
-                switch (childPosition) {
-                    case 0:
-                        location = Author.BIBLE.getTargetPath(Author.BIBLE.getContentsName());
-                        break;
-                    case 1:
-                        location = Author.HYMNS.getTargetPath(Author.HYMNS.getContentsName());
-                        break;
-                    case 2:
-                        location = Author.JND.getTargetPath(Author.JND.getContentsName());
-                        break;
-                    case 3:
-                        location = Author.CAC.getTargetPath(Author.CAC.getContentsName());
-                        break;
-                    case 4:
-                        location = Author.FER.getTargetPath(Author.FER.getContentsName());
-                        break;
-                    case 5:
-                        location = Author.WJH.getTargetPath(Author.WJH.getContentsName());
-                        break;
+                int i = -1;
+                int j = -1;
+                while (j < childPosition && i < Author.values().length) {
+                    i++;
+                    if (Author.values()[i].isSearchable()) j++;
                 }
+                if (j<Author.values().length) location = Author.values()[i].getTargetPath(Author.values()[i].getContentsName());
 
                 searchFragment.goToLocation("file:///android_asset/" + location);
             }

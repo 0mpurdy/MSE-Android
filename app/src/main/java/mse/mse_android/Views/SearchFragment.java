@@ -4,11 +4,13 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.os.Bundle;
 import android.os.Environment;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
@@ -17,11 +19,15 @@ import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.android.vending.expansion.zipfile.APKExpansionSupport;
+import com.android.vending.expansion.zipfile.ZipResourceFile;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -31,10 +37,8 @@ import mse.mse_android.common.LogLevel;
 import mse.mse_android.common.Logger;
 import mse.mse_android.data.Author;
 import mse.mse_android.data.Search;
-import mse.mse_android.search.AuthorSearchThread;
 import mse.mse_android.search.IndexStore;
 import mse.mse_android.search.SearchProgressThread;
-import mse.mse_android.search.SearchScope;
 import mse.mse_android.search.SearchThread;
 
 /**
@@ -61,6 +65,8 @@ public class SearchFragment extends Fragment {
 
     ArrayList<String> previousUrl;
 
+    ZipResourceFile mExpansionFile;
+
     public SearchFragment() {
         this.previousUrl = new ArrayList<>();
     }
@@ -84,17 +90,70 @@ public class SearchFragment extends Fragment {
             }
         });
         this.progressBar = (ProgressBar) v.findViewById(R.id.pbSearch);
+
+        // Get a ZipResourceFile representing a merger of both the main and patch files
+        try {
+            mExpansionFile = APKExpansionSupport.getAPKExpansionZipFile(mActivity, 10, 0);
+
+        } catch (IOException e) {
+            Log.w("[DEBUG  ]", "Failed to find expansion file", e);
+        }
+
+        checkExternalMedia();
+        copyAssetToExternalStorage("files/mseStyle.css", "files", "mseStyle.css");
+
         this.wvSearchResults = (WebView) v.findViewById(R.id.wvSearchResults);
         this.wvSearchResults.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                view.loadUrl(url);
+                Log.d("[URL   ]", url);
+                if (url.contains("target/")) url = url.replace("target/", "target_a/");
+                if (url.contains("\\")) url = url.replace("\\", "/");
+                if (!url.startsWith("data:") && url.startsWith("mse:")) {
+                    url = url.substring(4);
+                    Log.d("[URL2  ]", url);
+                    try {
+                        InputStream in = mExpansionFile.getInputStream(url);
+
+                        byte[] buffer = new byte[in.available()];
+                        in.read(buffer);
+                        in.close();
+                        String data = new String(buffer);
+                        if (data.contains("../../bootstrap"))
+                            data = data.replace("../../bootstrap", "/bootstrap");
+                        if (data.contains("../mseStyle.css"))
+                            data = data.replace("../mseStyle.css", Environment.getExternalStorageDirectory() + "/mseStyle.css");
+                        wvSearchResults.loadData(data, "text/html", "UTF-8");
+                    } catch (IOException ioe) {
+                        String data = "<p>" + ioe.getMessage() + "</p>";
+                        wvSearchResults.loadData(data, "text/html", "UTF-8");
+                    }
+                }
                 return false;
             }
         });
 
+        WebSettings mWebSettings = wvSearchResults.getSettings();
+        mWebSettings.setBuiltInZoomControls(true);
+        wvSearchResults.setScrollBarStyle(WebView.SCROLLBARS_OUTSIDE_OVERLAY);
+        wvSearchResults.setScrollbarFadingEnabled(false);
+
+        if (mExpansionFile != null) {
+            try {
+                InputStream in = mExpansionFile.getInputStream("target_a/index.html");
+                byte[] buffer = new byte[in.available()];
+                in.read(buffer);
+                in.close();
+                String data = new String(buffer);
+                data = data.replace("file:///android_asset/", "mse:");
+                wvSearchResults.loadData(data, "text/html", "UTF-8");
+            } catch (IllegalArgumentException | IllegalStateException | IOException e) {
+                Log.w("[DEBUG  ]", "Failed to update data source for media player", e);
+            }
+        }
+
         mSelectedAuthors = new ArrayList<>();
-        mSelectedAuthors.add(Author.JND);
+        mSelectedAuthors.add(Author.BIBLE);
 
 
         this.btnMenu = (ImageButton) v.findViewById(R.id.menuButton);
@@ -120,6 +179,10 @@ public class SearchFragment extends Fragment {
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         mActivity = (MainActivity) activity;
+    }
+
+    private void loadUrl() {
+
     }
 
     private void menuClick() {
@@ -173,6 +236,63 @@ public class SearchFragment extends Fragment {
         // start the thread to search
         SearchThread searchThread = new SearchThread(mCfg, mLogger, mActivity, wvSearchResults, mSelectedAuthors, indexStore, search, progress);
         searchThread.start();
+    }
+
+    private void copyAssetToExternalStorage(String assetLocation, String externalStorageFolder, String externalStorageName) {
+        try {
+            BufferedInputStream in = new BufferedInputStream(mActivity.getAssets().open(assetLocation));
+            File folder = getExternalStorageDir(externalStorageFolder);
+                if (folder.mkdirs()) {
+                    File outFile = new File(folder, externalStorageName);
+                    if (!outFile.exists()) {
+                        outFile.createNewFile();
+                    }
+                    BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outFile));
+                    try {
+                        // Transfer bytes from in to out
+                        byte[] buf = new byte[1024];
+                        int len;
+                        while ((len = in.read(buf)) > 0) {
+                            out.write(buf, 0, len);
+                        }
+                    } finally {
+                        out.close();
+                    }
+                } else {
+                    Log.e("[ERROR  ]", "Could not create folders in external storage");
+                }
+
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
+    }
+
+    public File getExternalStorageDir(String fileName) {
+        // Get the directory for the user's public pictures directory.
+        File file = new File(Environment.getExternalStorageDirectory(), fileName);
+        if (!file.mkdirs()) {
+            Log.e("[ERROR  ]", "Directory not created");
+        }
+        return file;
+    }
+
+    private void checkExternalMedia(){
+        boolean eSAvail = false;
+        boolean esWrite = false;
+        String state = Environment.getExternalStorageState();
+
+        if (Environment.MEDIA_MOUNTED.equals(state)) {
+            // Can read and write the media
+            eSAvail = esWrite = true;
+        } else if (Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
+            // Can only read the media
+            eSAvail = true;
+            esWrite = false;
+        } else {
+            // Can't read or write
+            eSAvail = esWrite = false;
+        }
+        Log.d("[DEBUG  ]", eSAvail + " : " + esWrite);
     }
 
     private void copyResultsGif() {
@@ -229,7 +349,7 @@ public class SearchFragment extends Fragment {
             i++;
             if (Author.values()[i].isSearchable()) j++;
         }
-        if (j<Author.values().length) toggleAuthor(Author.values()[i]);
+        if (j < Author.values().length) toggleAuthor(Author.values()[i]);
         mLogger.log(LogLevel.DEBUG, "Clicked " + groupPosition + " " + childPosition + " " + id);
         mLogger.log(LogLevel.DEBUG, Author.values()[i].getName());
         mLogger.closeLog();

@@ -25,6 +25,13 @@ public class AuthorSearchCache {
 
     private boolean wildSearch;
 
+    private boolean writtenBibleSearchTableHeader;
+    private boolean writtenBibleSearchTableFooter;
+    private boolean searchingDarby;
+    public String previousDarbyLine;
+
+    private int verseNum;
+
     String[] searchWords;
     private String[] searchTokens;
 
@@ -43,7 +50,7 @@ public class AuthorSearchCache {
     public short nextRef;
 
     public String line;
-    public String tempLine;
+    public String currentSectionHeader;
     public String prevLine;
     private SearchScope searchScope;
 
@@ -58,6 +65,12 @@ public class AuthorSearchCache {
         this.wildSearch = search.getWildSearch();
 
         this.searchScope = search.getSearchScope();
+
+        this.writtenBibleSearchTableHeader = false;
+        this.writtenBibleSearchTableFooter = false;
+        this.searchingDarby = true;
+
+        this.verseNum = 0;
 
         tooFrequentTokens = "";
 
@@ -249,10 +262,14 @@ public class AuthorSearchCache {
     }
 
     public void setReferencesToSearch() {
+        // add all the references for the least frequent token to the referencesToSearch array
         referencesToSearch = authorIndex.getReferences(getLeastFrequentToken());
     }
 
     public void refineReferences() {
+        // if there is more than one infrequent word
+        // refine the number of references (combine if wild,
+        // if not wild only use references where each word is found within 1 page
         if (numInfrequentTokens > 1) {
 
             // refine the references to search
@@ -465,6 +482,77 @@ public class AuthorSearchCache {
 
     public void incrementResults() {
         numAuthorResults++;
+    }
+
+    public boolean isWrittenBibleSearchTableHeader() {
+        return writtenBibleSearchTableHeader;
+    }
+
+    public boolean isWrittenBibleSearchTableFooter() {
+        return writtenBibleSearchTableFooter;
+    }
+
+    public void setWrittenBibleSearchTableHeader(boolean writtenBibleSearchTableHeader) {
+        this.writtenBibleSearchTableHeader = writtenBibleSearchTableHeader;
+    }
+
+    public void setWrittenBibleSearchTableFooter(boolean writtenBibleSearchTableFooter) {
+        this.writtenBibleSearchTableFooter = writtenBibleSearchTableFooter;
+    }
+
+    public boolean isSearchingDarby() {
+        return searchingDarby;
+    }
+
+    public ArrayList<String> finishSearchingSingleBibleScope(String line, ArrayList<String> resultText, boolean foundToken) {
+
+        if (writtenBibleSearchTableHeader && !searchingDarby) {
+
+            if (!foundToken) {
+                resultText.add("<td>" + removeHtml(line) + "</td>");
+            }
+
+            resultText.add("\t\t</tr>");
+            resultText.add("\t</table>");
+
+            writtenBibleSearchTableHeader = false;
+        } else if (searchingDarby && !writtenBibleSearchTableHeader) previousDarbyLine = line;
+
+        searchingDarby = !searchingDarby;
+
+        return resultText;
+    }
+
+    public int getVerseNum() {
+        return verseNum;
+    }
+
+    public void setVerseNum(int verseNum) {
+        this.verseNum = verseNum;
+    }
+
+    private String removeHtml(String line) {
+        return removeHtml(new StringBuilder(line)).toString();
+    }
+
+    private StringBuilder removeHtml(StringBuilder line) {
+        int charPos = 0;
+
+        while (++charPos < line.length()) {
+            if (line.charAt(charPos) == '<') {
+                int tempCharIndex = charPos + 1;
+                while (tempCharIndex < line.length() - 1 && line.charAt(tempCharIndex) != '>') tempCharIndex++;
+                tempCharIndex++;
+                line.replace(charPos, tempCharIndex, "");
+            }
+        }
+
+        return line;
+    }
+
+    public void incrementVerseNum() {
+
+        if (searchingDarby) verseNum++;
     }
 
 }
