@@ -37,6 +37,7 @@ import mse.mse_android.common.LogLevel;
 import mse.mse_android.common.Logger;
 import mse.mse_android.data.Author;
 import mse.mse_android.data.Search;
+import mse.mse_android.helpers.ReaderCreator;
 import mse.mse_android.search.IndexStore;
 import mse.mse_android.search.SearchProgressThread;
 import mse.mse_android.search.SearchThread;
@@ -94,20 +95,31 @@ public class SearchFragment extends Fragment {
         // Get a ZipResourceFile representing a merger of both the main and patch files
         try {
             mExpansionFile = APKExpansionSupport.getAPKExpansionZipFile(mActivity, 10, 0);
-
         } catch (IOException e) {
             Log.w("[DEBUG  ]", "Failed to find expansion file", e);
         }
 
         checkExternalMedia();
-        copyAssetToExternalStorage("files/mseStyle.css", "files", "mseStyle.css");
+        copyAssetToInternalStorage("mseStyle.css", "", "mseStyle.css");
+        copyAssetToInternalStorage("bootstrap/css/bootstrap.css", "bootstrap/css/", "bootstrap.css");
+        copyAssetToInternalStorage("bootstrap/js/bootstrap.js", "bootstrap/js/", "bootstrap.js");
+        copyAssetToInternalStorage("jquery/jquery-1.11.3.min.js", "jquery/", "jquery-1.11.3.min.js");
 
         this.wvSearchResults = (WebView) v.findViewById(R.id.wvSearchResults);
         this.wvSearchResults.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                Log.d("[URL   ]", url);
-                if (url.contains("target/")) url = url.replace("target/", "target_a/");
+                Log.d("[URL     ]", url);
+
+                // if trying to load a file that is an asset load the asset
+                if (isAssetFolder(url) && !url.contains("android_asset")) {
+                    url = url.replace("file:///data/data/mse.mse_android/files/", "file:///android_asset/");
+                    Log.d("[NEW URL ]", url);
+                    wvSearchResults.loadUrl(url);
+                }
+
+
+
                 if (url.contains("\\")) url = url.replace("\\", "/");
                 if (!url.startsWith("data:") && url.startsWith("mse:")) {
                     url = url.substring(4);
@@ -175,14 +187,14 @@ public class SearchFragment extends Fragment {
         return v;
     }
 
+    private boolean isAssetFolder(String url) {
+        return url.contains("bible/") || url.contains("hymns/") || url.contains("jnd/") || url.contains("cac/") || url.contains("fer/") || url.contains("jbs/");
+    }
+
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
         mActivity = (MainActivity) activity;
-    }
-
-    private void loadUrl() {
-
     }
 
     private void menuClick() {
@@ -242,28 +254,63 @@ public class SearchFragment extends Fragment {
         try {
             BufferedInputStream in = new BufferedInputStream(mActivity.getAssets().open(assetLocation));
             File folder = getExternalStorageDir(externalStorageFolder);
-                if (folder.mkdirs()) {
-                    File outFile = new File(folder, externalStorageName);
-                    if (!outFile.exists()) {
-                        outFile.createNewFile();
-                    }
-                    BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outFile));
-                    try {
-                        // Transfer bytes from in to out
-                        byte[] buf = new byte[1024];
-                        int len;
-                        while ((len = in.read(buf)) > 0) {
-                            out.write(buf, 0, len);
-                        }
-                    } finally {
-                        out.close();
-                    }
-                } else {
-                    Log.e("[ERROR  ]", "Could not create folders in external storage");
+            File outFile = new File(folder, externalStorageName);
+            if (!outFile.exists()) {
+                outFile.createNewFile();
+            }
+            BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outFile));
+            try {
+                // Transfer bytes from in to out
+                byte[] buf = new byte[1024];
+                int len;
+                while ((len = in.read(buf)) > 0) {
+                    out.write(buf, 0, len);
                 }
+            } finally {
+                out.close();
+            }
 
         } catch (IOException ioe) {
             ioe.printStackTrace();
+        }
+    }
+
+    private void copyAssetToInternalStorage(String assetLocation, String internalStorageFolder, String internalStorageName) {
+        BufferedInputStream in = null;
+        BufferedOutputStream out = null;
+        try {
+            in = new BufferedInputStream(mActivity.getAssets().open(assetLocation));
+            File folder = getInternalStorageDir(internalStorageFolder);
+            if (folder.exists() || folder.mkdirs()) {
+                File outFile = new File(folder, internalStorageName);
+                mLogger.log(LogLevel.DEBUG, "Copying asset: " + assetLocation + " to " + outFile.getAbsolutePath());
+                if (!outFile.exists()) {
+                    outFile.createNewFile();
+                }
+                out = new BufferedOutputStream(new FileOutputStream(outFile));
+                try {
+                    // Transfer bytes from in to out
+                    byte[] buf = new byte[1024];
+                    int len;
+                    while ((len = in.read(buf)) > 0) {
+                        out.write(buf, 0, len);
+                    }
+                } finally {
+                    out.close();
+                }
+            } else {
+                Log.e("[ERROR  ]", "Could not create folders in internal storage: " + folder.getAbsolutePath());
+            }
+
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        } finally {
+            try {
+                if (in != null) in.close();
+                if (out != null) out.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -271,12 +318,18 @@ public class SearchFragment extends Fragment {
         // Get the directory for the user's public pictures directory.
         File file = new File(Environment.getExternalStorageDirectory(), fileName);
         if (!file.mkdirs()) {
-            Log.e("[ERROR  ]", "Directory not created");
+            Log.e("[ERROR  ]", "Directory not created: " + file.getAbsolutePath());
         }
         return file;
     }
 
-    private void checkExternalMedia(){
+    public File getInternalStorageDir(String fileName) {
+        // Get the directory for the user's public pictures directory.
+        File file = new File(mActivity.getFilesDir(), fileName);
+        return file;
+    }
+
+    private void checkExternalMedia() {
         boolean eSAvail = false;
         boolean esWrite = false;
         String state = Environment.getExternalStorageState();
@@ -292,7 +345,7 @@ public class SearchFragment extends Fragment {
             // Can't read or write
             eSAvail = esWrite = false;
         }
-        Log.d("[DEBUG  ]", eSAvail + " : " + esWrite);
+        Log.d("[DEBUG   ]", "External media available: " + eSAvail + " : " + "External media writeable: " + esWrite);
     }
 
     private void copyResultsGif() {
@@ -372,6 +425,7 @@ public class SearchFragment extends Fragment {
         mCfg = new Config(mLogger, mActivity);
         mCfg.refresh();
         mLogger.closeLog();
+        ReaderCreator.mCfg = mCfg;
     }
 
 }

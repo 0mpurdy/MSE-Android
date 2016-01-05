@@ -1,6 +1,7 @@
 package mse.mse_android.search;
 
 import android.app.Activity;
+import android.util.Log;
 import android.webkit.WebView;
 
 import java.io.*;
@@ -13,11 +14,16 @@ import mse.mse_android.common.LogLevel;
 import mse.mse_android.common.LogRow;
 import mse.mse_android.data.Author;
 import mse.mse_android.data.AuthorIndex;
+import mse.mse_android.data.IResult;
 import mse.mse_android.data.Search;
+import mse.mse_android.helpers.HtmlHelper;
+import mse.mse_android.helpers.ReaderCreator;
 import mse.mse_android.search.IndexStore;
 
 /**
- * Created by Michael on 17/11/2015.
+ * Created by Michael Purdy on 17/11/2015.
+ *
+ * This is the thread that performs the search
  */
 public class SearchThread extends Thread {
 
@@ -55,32 +61,19 @@ public class SearchThread extends Thread {
     @Override
     public void run() {
 
-        if (authorsToSearch.contains(Author.BIBLE)) {
-
-            // search the bible
-
-        }
-
         // for each author to be searched
         for (Author nextAuthor : authorsToSearch) {
 
             if (!nextAuthor.isSearchable()) continue;
 
-//            ArrayList<LogRow> searchLog = new ArrayList<>();
-//            searchLogs.add(searchLog);
-
             AuthorIndex nextAuthorIndex = indexStore.getIndex(logger, nextAuthor);
 
             AuthorSearchCache nextAsc = new AuthorSearchCache(cfg, nextAuthorIndex, search);
 
-            AuthorSearchThread nextAuthorSearchThread = new AuthorSearchThread(mActivity, cfg, nextAsc, progress);
+            AuthorSearchThread nextAuthorSearchThread = new AuthorSearchThread(cfg, nextAsc, progress);
             singleSearchThreads.add(nextAuthorSearchThread);
 
             nextAuthorSearchThread.start();
-
-//            searchAuthor(resultText, nextAuthor, search, indexStore);
-//            resultText.add("Number of results for " + nextAuthor.getName() + ": " + search.getNumAuthorResults());
-//            search.clearAuthorValues();
 
         } // end searching each author
 
@@ -88,7 +81,7 @@ public class SearchThread extends Thread {
         // write the results
 
         // try to open and write to the results file
-        File resultsFile = new File(mActivity.getFilesDir() + File.separator + cfg.getResultsFileName());
+        File resultsFile = new File(ReaderCreator.getResultsFileLocation());
         if (!resultsFile.exists()) {
             resultsFile.getParentFile().mkdirs();
             try {
@@ -97,27 +90,39 @@ public class SearchThread extends Thread {
                 e.printStackTrace();
             }
         }
-
         PrintWriter pwResults = null;
-        try  {
+        try {
 
+            logger.log(LogLevel.DEBUG, "Writing Results: " + resultsFile.getAbsolutePath());
             pwResults = new PrintWriter(resultsFile);
-
-            pwResults.println(getHtmlHeader());
+            pwResults.println(HtmlHelper.getResultsHeader("../../mseStyle.css"));
 
             // join all the threads
             for (SingleSearchThread nextThread : singleSearchThreads) {
                 try {
                     nextThread.join();
 
-                    for (String resultLine : nextThread.getResults()) {
-                        pwResults.println(resultLine);
+                    AuthorSearchCache asc = ((AuthorSearchThread) nextThread).getAsc();
+
+                    // write the author header
+                    pwResults.println(HtmlHelper.getAuthorResultsHeader(asc.author, asc.printableSearchWords()));
+
+                    // write all the results / errors
+                    for (IResult result : nextThread.getResults()) {
+                        pwResults.println(result.getBlock());
                     }
 
+                    HtmlHelper.closeAuthorContainer(pwResults);
+
+                    // write the number of results for the author
+                    pwResults.println(HtmlHelper.getSingleAuthorResults(asc.getAuthorName(), asc.numAuthorResults));
+
+                    // write the log
                     for (LogRow logRow : nextThread.getLog()) {
                         logger.log(logRow);
                     }
 
+                    // add the number of search results to the total
                     search.addAuthorSearchResults(nextThread.getNumberOfResults());
 
                 } catch (InterruptedException e) {
@@ -125,23 +130,23 @@ public class SearchThread extends Thread {
                 }
             }
 
-            pwResults.println("\n\t<p>\n\t\tNumber of total results: " + search.getNumTotalResults() + "\n\t</p>");
-            pwResults.println(getHtmlFooter());
+            pwResults.println("\n\t\t<div class=\"spaced\">Number of total results: " + search.getNumTotalResults() + "</div>");
+            pwResults.println(HtmlHelper.getHtmlFooter("\t</div>"));
 
         } catch (FileNotFoundException fnfe) {
+
             logger.log(LogLevel.HIGH, "Could not find results file.");
+
         } finally {
             if (pwResults != null) pwResults.close();
         }
-
-//        search.setProgress("Done", 1.0);
 
         progress.set(1000 * authorsToSearch.size() + 1);
 
         mActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                String url = "file:///" + mActivity.getFilesDir() + File.separator + cfg.getResultsFileName();
+                String url = "file:///" + ReaderCreator.getResultsFileLocation();
                 mWebView.loadUrl(url);
             }
         });

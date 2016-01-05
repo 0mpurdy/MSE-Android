@@ -21,7 +21,7 @@ public class ReadFileHelper extends FileHelper {
     String currentLine;
 
     public ReadFileHelper(Activity activity, Author author, int volNum, boolean asset) {
-        this(activity, getHtmlFilePath(author, volNum), asset);
+        this(activity, getHtmlFileName(author, volNum), asset);
     }
 
     public ReadFileHelper(Activity activity, String filename, boolean asset) {

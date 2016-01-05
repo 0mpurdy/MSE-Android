@@ -1,6 +1,9 @@
 package mse.mse_android.data;
 
 public enum BibleBook {
+
+    // region books
+
     GENESIS("Genesis", 50),
     EXODUS("Exodus", 40),
     LEVITICUS("Leviticus", 27),
@@ -68,6 +71,8 @@ public enum BibleBook {
     JUDE("Jude", 1),
     REVELATION("Revelation", 22);
 
+    // endregion
+
     private String name;
     private int numChapters;
 
@@ -82,6 +87,13 @@ public enum BibleBook {
 
     public int getNumChapters() {
         return numChapters;
+    }
+
+    public static int getIndexFromString(String bookName) {
+        for (BibleBook nextBook : values()) {
+            if (nextBook.getName().equalsIgnoreCase(bookName)) return nextBook.ordinal();
+        }
+        return -1;
     }
 
 }

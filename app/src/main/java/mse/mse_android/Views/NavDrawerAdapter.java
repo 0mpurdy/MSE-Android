@@ -74,13 +74,6 @@ public class NavDrawerAdapter extends BaseExpandableListAdapter {
         } else {
             text.setBackgroundColor(mActivity.getResources().getColor(R.color.childItemBackground));
         }
-//		convertView.setOnClickListener(new OnClickListener() {
-//			@Override
-//			public void onClick(View v) {
-//				Toast.makeText(activity, tempChild.get(childPosition),
-//						Toast.LENGTH_SHORT).show();
-//			}
-//		});
         convertView.setTag(tempChild.get(childPosition));
         return convertView;
     }

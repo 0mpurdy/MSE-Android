@@ -2,7 +2,10 @@ package mse.mse_android.helpers;
 
 import android.app.Activity;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.InputStreamReader;
 
 import mse.mse_android.data.Author;
 import mse.mse_android.data.BibleBook;
@@ -21,7 +24,7 @@ public abstract class FileHelper {
         this.file = new File(filename);
     }
 
-    public static String getHtmlFilePath(Author author, int volNum) {
+    public static String getHtmlFileName(Author author, int volNum) {
         String filename = "";
         if (author.equals(Author.BIBLE)) {
             filename += author.getTargetPath(BibleBook.values()[volNum - 1].getName() + ".htm");

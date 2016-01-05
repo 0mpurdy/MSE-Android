@@ -26,6 +26,7 @@ import mse.mse_android.common.Config;
 import mse.mse_android.common.LogLevel;
 import mse.mse_android.common.Logger;
 import mse.mse_android.data.Author;
+import mse.mse_android.helpers.ReaderCreator;
 
 public class MainActivity extends Activity {
 
@@ -71,6 +72,8 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         this.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        ReaderCreator.mActivity = this;
 
         // set the view
         setContentView(R.layout.activity_main);
@@ -165,9 +168,11 @@ public class MainActivity extends Activity {
                     i++;
                     if (Author.values()[i].isSearchable()) j++;
                 }
-                if (j<Author.values().length) location = Author.values()[i].getTargetPath(Author.values()[i].getContentsName());
+                if (j<Author.values().length) location = Author.values()[i].getTargetPath(Author.values()[i].getContentsName()) + ".htm";
 
                 searchFragment.goToLocation("file:///android_asset/" + location);
+
+                mDrawerLayout.closeDrawers();
             }
             return false;
         }

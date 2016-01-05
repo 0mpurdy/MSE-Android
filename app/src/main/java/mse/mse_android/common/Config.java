@@ -8,7 +8,7 @@ package mse.mse_android.common;
 import android.app.Activity;
 
 import mse.mse_android.data.Author;
-import mse.mse_android.search.SearchScope;
+import mse.mse_android.data.SearchType;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -32,7 +32,7 @@ public class Config {
     private String resDir;
     private String resultsFileName;
     private String searchString;
-    private SearchScope searchScope;
+    private SearchType searchType;
     private HashMap<String, Boolean> selectedAuthors;
     private boolean setup;
 
@@ -41,7 +41,7 @@ public class Config {
         this.logger = logger;
         this.context = context;
 
-        configFilePath = context.getFilesDir() + File.separator + "Config.txt";
+        configFilePath = context.getFilesDir() + File.separator + "config.txt";
 
         File configFile = new File(configFilePath);
         if (!configFile.exists()) {
@@ -61,8 +61,8 @@ public class Config {
             resDir = getNextOption(br, "resDir");
             resultsFileName = getNextOption(br, "resultsFileName");
             searchString = getNextOption(br, "searchString");
-            searchScope = SearchScope.fromString(getNextOption(br, "searchScope"));
-            if (searchScope == null) searchScope = SearchScope.CLAUSE;
+            searchType = SearchType.fromString(getNextOption(br, "searchScope"));
+            if (searchType== null) searchType = SearchType.MATCH;
 
             // skip selected authors line
             br.readLine();
@@ -110,7 +110,7 @@ public class Config {
         resDir = File.separator;
         resultsFileName = "SearchResults.htm";
         searchString = "";
-        searchScope = SearchScope.CLAUSE;
+        searchType = SearchType.MATCH;
 
         // set the selected books to be searched to only the bible
         selectedAuthors = new HashMap<>();
@@ -138,7 +138,7 @@ public class Config {
                 writeOption(bw, "resDir", resDir);
                 writeOption(bw, "resultsFileName", resultsFileName);
                 writeOption(bw, "searchString", searchString);
-                writeOption(bw, "searchScope", searchScope.getMenuName());
+                writeOption(bw, "searchScope", searchType.getMenuName());
 
                 bw.write(" --- Selected Authors --- ");
                 bw.newLine();
@@ -183,7 +183,7 @@ public class Config {
         return context.getFilesDir() + resDir;
     }
 
-    public String getResultsFileName() {
+    public String getResultsFile() {
         return "target" + File.separator + "results" + File.separator + resultsFileName;
     }
 
@@ -199,12 +199,12 @@ public class Config {
         this.searchString = searchString;
     }
 
-    public SearchScope getSearchScope() {
-        return searchScope;
+    public SearchType getSearchType() {
+        return searchType;
     }
 
-    public void setSearchScope(SearchScope searchScope) {
-        this.searchScope = searchScope;
+    public void setSearchType(SearchType searchType) {
+        this.searchType = searchType;
     }
 
     public ArrayList<Author> getSelectedAuthors() {
