@@ -106,6 +106,7 @@ public class SearchFragment extends Fragment {
         copyAssetToInternalStorage("jquery/jquery-1.11.3.min.js", "jquery/", "jquery-1.11.3.min.js");
 
         this.wvSearchResults = (WebView) v.findViewById(R.id.wvSearchResults);
+        this.wvSearchResults.getSettings().setJavaScriptEnabled(true);
         this.wvSearchResults.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
@@ -113,12 +114,12 @@ public class SearchFragment extends Fragment {
 
                 // if trying to load a file that is an asset load the asset
                 if (isAssetFolder(url) && !url.contains("android_asset")) {
-                    url = url.replace("file:///data/data/mse.mse_android/files/", "file:///android_asset/");
+                    String ident = "files/";
+                    url = url.substring(url.indexOf(ident) + ident.length());
+                    url = "file:///android_asset/" + url;
                     Log.d("[NEW URL ]", url);
                     wvSearchResults.loadUrl(url);
                 }
-
-
 
                 if (url.contains("\\")) url = url.replace("\\", "/");
                 if (!url.startsWith("data:") && url.startsWith("mse:")) {

@@ -14,7 +14,7 @@ public enum Author {
     CHM(5, "CHM", "C.H.Mackintosh", "chm", 18, true, false),
     FER(6, "FER", "F.E.Raven", "fer", 21, true, true),
     CAC(7, "CAC", "C.A.Coates", "cac", 37, true, true),
-    JT(8, "JT", "J.Taylor Snr", "jt", 103, true, true),
+    JT(8, "JT", "J.Taylor Snr", "jt", 103, true, false),
     GRC(9, "GRC", "G.R.Cowell", "grc", 88, true, false),
     AJG(10, "AJG", "A.J.Gardiner", "ajg", 11, true, false),
     SMC(11, "SMC", "S.McCallum", "smc", 10, true, false),
@@ -58,7 +58,7 @@ public enum Author {
     }
 
     public String getVolumePath(int volumeNumber) {
-        return getTargetPath(folder + volumeNumber + ".htm");
+        return getTargetPath(code + volumeNumber + ".htm");
     }
 
     public String getContentsName() {

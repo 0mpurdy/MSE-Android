@@ -61,7 +61,7 @@ public class AuthorIndex {
             this.tokenCountMap = (HashMap<String, Integer>) input.readObject();
             this.references = (HashMap<String, short[]>) input.readObject();
         } catch (FileNotFoundException fnfe) {
-            logger.log(LogLevel.HIGH, "Could not file find file: target" + author.getIndexFilePath());
+            logger.log(LogLevel.HIGH, "Could not find file (asset): " + author.getIndexFilePath());
         } catch (IOException ioe) {
             logger.log(LogLevel.HIGH, "Error loading from: " + author.getIndexFilePath());
         } catch (ClassCastException cce) {
