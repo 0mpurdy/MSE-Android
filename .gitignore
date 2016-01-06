@@ -9,3 +9,7 @@
 app/src/main/assets/*
 *.apk
 libs
+app/app.iml
+.idea/vcs.xml
+.idea/misc.xml
+.idea/encodings.xml
