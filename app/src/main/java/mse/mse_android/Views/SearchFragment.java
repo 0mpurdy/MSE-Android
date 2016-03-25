@@ -115,7 +115,11 @@ public class SearchFragment extends Fragment {
                 // if trying to load a file that is an asset load the asset
                 if (isAssetFolder(url) && !url.contains("android_asset")) {
                     String ident = "files/";
-                    url = url.substring(url.indexOf(ident) + ident.length());
+                    if (url.contains(ident)) {
+                        url = url.substring(url.indexOf(ident));
+                    } else {
+                        url = "files/" + url.substring(url.indexOf(':') + 1);
+                    }
                     url = "file:///android_asset/" + url;
                     Log.d("[NEW URL ]", url);
                     wvSearchResults.loadUrl(url);
@@ -189,7 +193,7 @@ public class SearchFragment extends Fragment {
     }
 
     private boolean isAssetFolder(String url) {
-        return url.contains("bible/") || url.contains("hymns/") || url.contains("jnd/") || url.contains("cac/") || url.contains("fer/") || url.contains("jbs/");
+        return url.contains("bible/") || url.contains("hymns/") || url.contains("jnd/");
     }
 
     @Override

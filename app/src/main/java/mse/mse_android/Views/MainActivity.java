@@ -168,9 +168,9 @@ public class MainActivity extends Activity {
                     i++;
                     if (Author.values()[i].isSearchable()) j++;
                 }
-                if (j<Author.values().length) location = Author.values()[i].getTargetPath(Author.values()[i].getContentsName()) + ".htm";
+                if (j<Author.values().length) location = Author.values()[i].getTargetPath(Author.values()[i].getContentsName());
 
-                searchFragment.goToLocation("file:///android_asset/" + location);
+                searchFragment.goToLocation("file:///android_asset/files/" + location);
 
                 mDrawerLayout.closeDrawers();
             }
