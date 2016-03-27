@@ -12,14 +12,17 @@ import mse.mse_android.data.BibleBook;
 import mse.mse_android.data.HymnBook;
 
 /**
- * Created by mj_pu_000 on 05/12/2015.
+ * @author Michael Purdy
+ *         Helps to generate links and folder paths
  */
 public abstract class FileHelper {
 
     Activity mActivity;
     File file;
 
-    public FileHelper(Activity activity, String filename){
+    private static final String TARGET_FOLDER = "files/target_a";
+
+    public FileHelper(Activity activity, String filename) {
         this.mActivity = activity;
         this.file = new File(filename);
     }
@@ -27,11 +30,11 @@ public abstract class FileHelper {
     public static String getHtmlFileName(Author author, int volNum) {
         String filename = "";
         if (author.equals(Author.BIBLE)) {
-            filename += author.getTargetPath(BibleBook.values()[volNum - 1].getName() + ".htm");
+            filename += getTargetPath(author, BibleBook.values()[volNum - 1].getBookFileName());
         } else if (author.equals(Author.HYMNS)) {
-            filename += author.getTargetPath(HymnBook.values()[volNum - 1].getOutputFilename());
+            filename += getTargetPath(author, HymnBook.values()[volNum - 1].getOutputFilename());
         } else {
-            filename += author.getVolumePath(volNum);
+            filename += getTargetVolumePath(author, volNum);
         }
 
         return filename;
@@ -42,4 +45,25 @@ public abstract class FileHelper {
     public String getFilePath() {
         return file.getAbsolutePath();
     }
+
+    // region target paths
+
+    public static String getTargetPath(Author author, String filename) {
+        return TARGET_FOLDER + File.separator + author.getPath() + filename;
+    }
+
+    public static String getTargetVolumePath(Author author, int volumeNumber) {
+        return getTargetPath(author, author.getVolumeName(volumeNumber));
+    }
+
+    public static String getIndexTargetPath(Author author) {
+        return getTargetPath(author, author.getIndexFileName());
+    }
+
+
+    public static String getHtmlLink(Author author, String filename) {
+        return "../../../" + TARGET_FOLDER + "/" + author.getPath() + filename;
+    }
+
+    // endregion
 }

@@ -26,7 +26,8 @@ import mse.mse_android.helpers.ReadFileHelper;
 
 
 /**
- * @author michael
+ * @author Michael Purdy
+ *         Thread to search a single author
  */
 public class AuthorSearchThread extends SingleSearchThread {
 
@@ -120,46 +121,51 @@ public class AuthorSearchThread extends SingleSearchThread {
         // get file name
         String filename = FileHelper.getHtmlFileName(asc.author, asc.reference.volNum);
 
-        HtmlReader htmlReader = new HtmlReader(filename, searchLog);
-        // start with the first line
-        asc.line = htmlReader.readContentLine();
+        try {
+            HtmlReader htmlReader = new HtmlReader(filename, searchLog);
+            // start with the first line
+            asc.line = htmlReader.readContentLine();
 
-        progress.addAndGet(1000 / asc.author.getNumVols());
+            progress.addAndGet(1000 / asc.author.getNumVols());
 
-        while (asc.reference.volNum == cVolNum) {
-            // while still in the same volume
-            // loop through references
+            while (asc.reference.volNum == cVolNum) {
+                // while still in the same volume
+                // loop through references
 
-            asc.prevLine = "";
+                asc.prevLine = "";
 
-            // skip to next page and get the last line of the previous page
-            cPageNum = htmlReader.findNextAuthorPage(asc);
+                // skip to next page and get the last line of the previous page
+                cPageNum = htmlReader.findNextAuthorPage(asc);
 
-            // if the page number is 0 log the error and break out
-            if (cPageNum == 0) {
-                log(LogLevel.HIGH, "Could not find reference " + asc.reference.getShortReadableReference());
-                htmlReader.close();
-                return false;
-            }
+                // if the page number is 0 log the error and break out
+                if (cPageNum == 0) {
+                    log(LogLevel.HIGH, "Could not find reference " + asc.reference.getShortReadableReference());
+                    htmlReader.close();
+                    return false;
+                }
 
-            asc.currentSectionHeader = htmlReader.getFirstAuthorSectionHeader(asc);
-            if (asc.currentSectionHeader == null) {
-                searchLog.add(new LogRow(LogLevel.HIGH, "NULL line " + asc.reference.getShortReadableReference()));
-            } else {
-                searchPage(results, asc, htmlReader);
-            }
-            asc.line = asc.currentSectionHeader;
+                asc.currentSectionHeader = htmlReader.getFirstAuthorSectionHeader(asc);
+                if (asc.currentSectionHeader == null) {
+                    searchLog.add(new LogRow(LogLevel.HIGH, "NULL line " + asc.reference.getShortReadableReference()));
+                } else {
+                    searchPage(results, asc, htmlReader);
+                }
+                asc.line = asc.currentSectionHeader;
 
-            // clear the previousLine
-            asc.prevLine = "";
+                // clear the previousLine
+                asc.prevLine = "";
 
-            // get the next reference
-            asc.getNextPage();
+                // get the next reference
+                asc.getNextPage();
 
-        } // finished references in volume
+            } // finished references in volume
 
-        htmlReader.close();
-        return true;
+            htmlReader.close();
+            return true;
+        } catch (IOException e) {
+            log(LogLevel.HIGH, "Could not open volume: " + filename);
+            return false;
+        }
 
     }
 
@@ -304,7 +310,6 @@ public class AuthorSearchThread extends SingleSearchThread {
     boolean foundCurrentSearchToken;
 
 
-
     // endregion
 
     private int startOfLastSentencePos;
@@ -364,7 +369,8 @@ public class AuthorSearchThread extends SingleSearchThread {
 
         }
 
-        if (sentences.size() > 0) sentences.set(0, trailingIncompleteSentence + " " + sentences.get(0));
+        if (sentences.size() > 0)
+            sentences.set(0, trailingIncompleteSentence + " " + sentences.get(0));
 
         return sentences;
     }

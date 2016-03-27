@@ -13,19 +13,15 @@ import mse.mse_android.data.Author;
 import mse.mse_android.search.AuthorSearchCache;
 
 /**
- * Created by Michael Purdy on 04/01/2016.
+ *
  */
 public class HtmlReader {
 
     private BufferedReader br;
     private ArrayList<LogRow> searchLog;
 
-    public HtmlReader(String path, ArrayList<LogRow> searchLog) {
-        try {
-            this.br = ReaderCreator.getBufferedReader(path, true);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public HtmlReader(String path, ArrayList<LogRow> searchLog) throws IOException {
+        this.br = ReaderCreator.getBufferedReader(path, true);
         this.searchLog = searchLog;
     }
 

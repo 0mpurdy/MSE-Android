@@ -123,7 +123,7 @@ public class Result implements IResult {
 
     // region refine
 
-    public boolean refine (boolean contains, String[] refineWords) {
+    public boolean refine(boolean contains, String[] refineWords) {
 
         String[] lineTokens = HtmlHelper.tokenizeLine(text);
 
@@ -162,7 +162,7 @@ public class Result implements IResult {
 
     public String getHymnsBlock() {
         String brokenText = text.replace("\n", "<br>");
-        String block =  "\t\t\t<div class=\"container padded\">\n" +
+        String block = "\t\t\t<div class=\"container padded\">\n" +
                 "\t\t\t\t<a class=\"btn btn-primary\" href=\"" + reference.getPath() + "\" role=\"button\">" +
                 reference.getReadableReference() + "</a>\n" +
                 "\t\t\t\t<div class=\"spaced\">" + getMarkedLine(brokenText) + "</div>\n" +
@@ -183,8 +183,7 @@ public class Result implements IResult {
     public String getBibleBlock() {
 
         String[] lines = text.split(Pattern.quote(" <!-> "));
-
-        return "\t\t\t<p><a class=\"btn\" href=\"" + reference.getPath() + "\"> "
+        String temp = "\t\t\t<p><a class=\"btn\" href=\"" + reference.getPath() + "\"> "
                 + reference.getReadableReference() + "</a></p>\n" +
                 "\t\t\t<table class=\"bible-searchResult\">\n" +
                 "\t\t\t\t<tr>\n" +
@@ -192,6 +191,7 @@ public class Result implements IResult {
                 "\t\t\t\t\t<td class=\"mse-half\">" + getMarkedLine(lines[1]) + "</td>\n" +
                 "\t\t\t\t</tr>\n" +
                 "\t\t\t</table>";
+        return temp;
     }
 
     private String getMarkedLine(String line) {

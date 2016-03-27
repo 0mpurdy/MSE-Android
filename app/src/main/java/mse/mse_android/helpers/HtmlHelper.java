@@ -80,7 +80,7 @@ public class HtmlHelper {
     public static String getFormattedHymnbookLink(AuthorSearchCache asc) {
         return String.format("\t\t\t<p class=\"%s\"><a href=\"%s\">%s</a></p>",
                 "results-hymnbook-name",
-                "..\\..\\" + asc.author.getTargetPath(asc.reference.getFileName()),
+                "..\\..\\" + FileHelper.getTargetPath(asc.author, asc.reference.getFileName()),
                 HymnBook.values()[asc.reference.volNum - 1].getName());
     }
 

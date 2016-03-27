@@ -100,10 +100,10 @@ public class SearchFragment extends Fragment {
         }
 
         checkExternalMedia();
-        copyAssetToInternalStorage("mseStyle.css", "", "mseStyle.css");
-        copyAssetToInternalStorage("bootstrap/css/bootstrap.css", "bootstrap/css/", "bootstrap.css");
-        copyAssetToInternalStorage("bootstrap/js/bootstrap.js", "bootstrap/js/", "bootstrap.js");
-        copyAssetToInternalStorage("jquery/jquery-1.11.3.min.js", "jquery/", "jquery-1.11.3.min.js");
+        copyAssetToInternalStorage("files/mseStyle.css", "files/", "mseStyle.css");
+        copyAssetToInternalStorage("files/bootstrap/css/bootstrap.css", "files/bootstrap/css/", "bootstrap.css");
+        copyAssetToInternalStorage("files/bootstrap/js/bootstrap.js", "files/bootstrap/js/", "bootstrap.js");
+        copyAssetToInternalStorage("files/jquery/jquery-1.11.3.min.js", "files/jquery/", "jquery-1.11.3.min.js");
 
         this.wvSearchResults = (WebView) v.findViewById(R.id.wvSearchResults);
         this.wvSearchResults.getSettings().setJavaScriptEnabled(true);
@@ -112,38 +112,38 @@ public class SearchFragment extends Fragment {
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 Log.d("[URL     ]", url);
 
-                // if trying to load a file that is an asset load the asset
-                if (isAssetFolder(url) && !url.contains("android_asset")) {
-                    String ident = "files/";
-                    if (url.contains(ident)) {
-                        url = url.substring(url.indexOf(ident));
-                    } else {
-                        url = "files/" + url.substring(url.indexOf(':') + 1);
-                    }
-                    url = "file:///android_asset/" + url;
-                    Log.d("[NEW URL ]", url);
-                    wvSearchResults.loadUrl(url);
-                }
-
                 if (url.contains("\\")) url = url.replace("\\", "/");
-                if (!url.startsWith("data:") && url.startsWith("mse:")) {
-                    url = url.substring(4);
-                    Log.d("[URL2  ]", url);
-                    try {
-                        InputStream in = mExpansionFile.getInputStream(url);
+                if (!url.contains("android_asset")) {
+                    // if trying to load a file that is an asset load the asset
+                    if (isAssetFolder(url)) {
+                        String ident = "files/";
+                        if (url.contains(ident)) {
+                            url = url.substring(url.indexOf(ident));
+                        } else {
+                            url = url.substring(url.indexOf(':') + 1);
+                        }
+                        url = "file:///android_asset/" + url;
+                        Log.d("[A_URL ]", url);
+                        wvSearchResults.loadUrl(url);
+                    } else if (!url.startsWith("data:") && url.startsWith("mse:")) {
+                        url = url.substring(4);
+                        Log.d("[E_URL  ]", url);
+                        try {
+                            InputStream in = mExpansionFile.getInputStream(url);
 
-                        byte[] buffer = new byte[in.available()];
-                        in.read(buffer);
-                        in.close();
-                        String data = new String(buffer);
-                        if (data.contains("../../bootstrap"))
-                            data = data.replace("../../bootstrap", "/bootstrap");
-                        if (data.contains("../mseStyle.css"))
-                            data = data.replace("../mseStyle.css", Environment.getExternalStorageDirectory() + "/mseStyle.css");
-                        wvSearchResults.loadData(data, "text/html", "UTF-8");
-                    } catch (IOException ioe) {
-                        String data = "<p>" + ioe.getMessage() + "</p>";
-                        wvSearchResults.loadData(data, "text/html", "UTF-8");
+                            byte[] buffer = new byte[in.available()];
+                            in.read(buffer);
+                            in.close();
+                            String data = new String(buffer);
+                            if (data.contains("../../bootstrap"))
+                                data = data.replace("../../bootstrap", "/bootstrap");
+                            if (data.contains("../mseStyle.css"))
+                                data = data.replace("../mseStyle.css", Environment.getExternalStorageDirectory() + "/mseStyle.css");
+                            wvSearchResults.loadData(data, "text/html", "UTF-8");
+                        } catch (IOException ioe) {
+                            String data = "<p>" + ioe.getMessage() + "</p>";
+                            wvSearchResults.loadData(data, "text/html", "UTF-8");
+                        }
                     }
                 }
                 return false;

@@ -23,7 +23,7 @@ public enum Author {
 
     // endregion
 
-    private final int index;
+    private final int id;
     private final String code;
     private final String name;
     private final String folder;
@@ -31,10 +31,9 @@ public enum Author {
     private final boolean isMinistry;
     private final boolean searchable;
     private final boolean asset;
-    private static final String TARGET_FOLDER = "target_a";
 
-    Author(int index, String code, String name, String folder, int numVols, boolean isMinistry, boolean searchable, boolean asset) {
-        this.index = index;
+    Author(int id, String code, String name, String folder, int numVols, boolean isMinistry, boolean searchable, boolean asset) {
+        this.id = id;
         this.code = code;
         this.name = name;
         this.folder = folder;
@@ -44,32 +43,54 @@ public enum Author {
         this.asset = asset;
     }
 
+    // region folder
+
+    public String getPath() {
+        return folder + File.separator;
+    }
+
+    // endregion
+
+    // region prepare
+
+    public String getPreparePath() {
+        return "source" + File.separator + folder + File.separator;
+    }
+
+    public String getPreparePath(String filename) {
+        return "source" + File.separator + folder + File.separator + filename;
+    }
+
+    public String getPrepareSourceName(int volNumber) {
+        return folder + volNumber + ".txt";
+    }
+
+    // endregion
+
+    // region filenames
+
+    public String getContentsName() {
+        return code + "-Contents.html";
+    }
+
+    public String getIndexFileName() {
+        return "index-" + getCode() + ".idx";
+    }
+
+    public String getVolumeName(int volumeNumber) {
+        return folder + volumeNumber + ".html";
+    }
+
+    // endregion
+
+    // region getters
+
     public String getCode() {
         return code;
     }
 
     public String getName() {
         return name;
-    }
-
-    public String getTargetPath(String filename) {
-        return TARGET_FOLDER + File.separator + folder + File.separator + filename;
-    }
-
-    public String getRelativeHtmlTargetPath(String filename) {
-        return "../../" + TARGET_FOLDER + "/" + folder + "/" + filename;
-    }
-
-    public String getVolumePath(int volumeNumber) {
-        return getTargetPath(folder + volumeNumber + ".html");
-    }
-
-    public String getContentsName() {
-        return code + "-Contents.html";
-    }
-
-    public String getIndexFilePath() {
-        return getTargetPath("index-" + getCode() + ".idx");
     }
 
     public boolean isMinistry() {
@@ -84,9 +105,13 @@ public enum Author {
         return numVols;
     }
 
-    public int getIndex() {
-        return index;
+    public int getID() {
+        return id;
     }
+
+    // endregion
+
+    // region reader
 
     public static Author getFromString(String authorString) {
 
@@ -105,5 +130,6 @@ public enum Author {
         return null;
 
     }
-}
 
+    // endregion
+}

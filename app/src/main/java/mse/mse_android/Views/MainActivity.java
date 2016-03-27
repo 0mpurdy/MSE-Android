@@ -26,6 +26,7 @@ import mse.mse_android.common.Config;
 import mse.mse_android.common.LogLevel;
 import mse.mse_android.common.Logger;
 import mse.mse_android.data.Author;
+import mse.mse_android.helpers.FileHelper;
 import mse.mse_android.helpers.ReaderCreator;
 
 public class MainActivity extends Activity {
@@ -115,7 +116,7 @@ public class MainActivity extends Activity {
         mDrawerList.setOnChildClickListener(new DrawerItemClickListener());
     }
 
-    private void setGroupOptions(){
+    private void setGroupOptions() {
         groupItem = new ArrayList<>();
         groupItem.add("Select Author");
         groupItem.add("Library");
@@ -168,9 +169,10 @@ public class MainActivity extends Activity {
                     i++;
                     if (Author.values()[i].isSearchable()) j++;
                 }
-                if (j<Author.values().length) location = Author.values()[i].getTargetPath(Author.values()[i].getContentsName());
+                if (j < Author.values().length)
+                    location = FileHelper.getTargetPath(Author.values()[i], Author.values()[i].getContentsName());
 
-                searchFragment.goToLocation("file:///android_asset/files/" + location);
+                searchFragment.goToLocation("file:///android_asset/" + location);
 
                 mDrawerLayout.closeDrawers();
             }

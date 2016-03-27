@@ -32,7 +32,7 @@ public class Logger implements ILogger {
             if (!loggingFile.exists()) {
                 loggingFile.createNewFile();
             }
-        } catch(IOException ioe) {
+        } catch (IOException ioe) {
             System.out.println(ioe.getMessage());
         }
         this.logLevel = logLevel;
@@ -42,15 +42,15 @@ public class Logger implements ILogger {
         if (logLevel.value <= this.logLevel.value) {
             Date date = new Date();
             pwLog.printf("%s [%s] - %s\n", logLevel.tag, dateFormat.format(date), message);
+            Log.d(logLevel.tag, String.format("[%s] - %s", dateFormat.format(date), message));
         }
-        Log.d(logLevel.tag, message);
     }
 
     public synchronized void log(LogRow logRow) {
         if (logRow.logLevel.value <= this.logLevel.value) {
             Date date = new Date();
             String tag = logRow.logLevel.tag;
-            pwLog.printf("%s [%s] - %s\n", tag, dateFormat.format(date),logRow.message);
+            pwLog.printf("%s [%s] - %s\n", tag, dateFormat.format(date), logRow.message);
         }
     }
 

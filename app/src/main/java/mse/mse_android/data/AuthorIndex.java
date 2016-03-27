@@ -8,6 +8,7 @@ import java.util.HashMap;
 import mse.mse_android.common.ILogger;
 import mse.mse_android.common.LogLevel;
 import mse.mse_android.data.Author;
+import mse.mse_android.helpers.FileHelper;
 
 /**
  * Created by mj_pu_000 on 09/09/2015.
@@ -55,15 +56,15 @@ public class AuthorIndex {
 
         // try to load the index of the current author
         try {
-            InputStream inStream = assetManager.open(author.getIndexFilePath());
+            InputStream inStream = assetManager.open(FileHelper.getIndexTargetPath(author));
             BufferedInputStream bInStream = new BufferedInputStream(inStream);
             ObjectInput input = new ObjectInputStream(bInStream);
             this.tokenCountMap = (HashMap<String, Integer>) input.readObject();
             this.references = (HashMap<String, short[]>) input.readObject();
         } catch (FileNotFoundException fnfe) {
-            logger.log(LogLevel.HIGH, "Could not find file (asset): " + author.getIndexFilePath());
+            logger.log(LogLevel.HIGH, "Could not find file (asset): " + FileHelper.getIndexTargetPath(author));
         } catch (IOException ioe) {
-            logger.log(LogLevel.HIGH, "Error loading from: " + author.getIndexFilePath());
+            logger.log(LogLevel.HIGH, "Error loading from: " + FileHelper.getIndexTargetPath(author));
         } catch (ClassCastException cce) {
             logger.log(LogLevel.HIGH, "Error casting class when loading new index");
         } catch (ClassNotFoundException cnfe) {
