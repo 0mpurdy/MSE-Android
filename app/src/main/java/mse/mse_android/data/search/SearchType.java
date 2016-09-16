@@ -1,4 +1,4 @@
-package mse.mse_android.data;
+package mse.mse_android.data.search;
 
 /**
  * @author Michael Purdy

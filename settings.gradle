@@ -1,1 +1,2 @@
 include ':app'
+include ':libs:SlidingMenu-master:library'

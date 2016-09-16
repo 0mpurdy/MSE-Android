@@ -1,7 +1,10 @@
-package mse.mse_android.data;
+package mse.mse_android.data.search;
 
 import java.util.regex.Pattern;
 
+import mse.mse_android.data.author.Author;
+import mse.mse_android.data.author.BibleBook;
+import mse.mse_android.data.author.HymnBook;
 import mse.mse_android.helpers.HtmlHelper;
 
 /**
@@ -70,7 +73,7 @@ public class Result implements IResult {
         text = HtmlHelper.removeTabs(HtmlHelper.removeHtml(lines[i]));
         text += " <!-> " + HtmlHelper.removeTabs(HtmlHelper.removeHtml(lines[i + 1]));
 
-        String bookName = link.substring(link.lastIndexOf("/") + 1, link.indexOf(".htm"));
+        String bookName = link.substring(link.lastIndexOf("/") + 1, link.indexOf(".html"));
         String chapter = link.substring(link.lastIndexOf("#") + 1, link.lastIndexOf(":"));
         String verse = link.substring(link.lastIndexOf(":") + 1);
 
@@ -78,7 +81,7 @@ public class Result implements IResult {
         int pageNum = Integer.parseInt(chapter);
         int verseNum = Integer.parseInt(verse);
 
-        reference = new Reference(author, volNum, pageNum, verseNum);
+        reference = new Reference(author, volNum, pageNum, verseNum, 0);
     }
 
     private void constructHymnFromBlock(String resultBlock) {
@@ -94,7 +97,7 @@ public class Result implements IResult {
         int volNum = HymnBook.getIndexFromString(bookName) + 1;
         int pageNum = Integer.parseInt(hymnNumber);
 
-        reference = new Reference(author, volNum, pageNum, 0);
+        reference = new Reference(author, volNum, pageNum, 0, 0);
     }
 
     private void constructMinistryFromBlock(String resultBlock) {
@@ -109,7 +112,7 @@ public class Result implements IResult {
         int volNum = getMinistryBookNumber(bookName);
         int pageNum = Integer.parseInt(pageNumberString);
 
-        reference = new Reference(author, volNum, pageNum, 0);
+        reference = new Reference(author, volNum, pageNum, 0, 0);
     }
 
     private int getMinistryBookNumber(String bookName) {
@@ -183,7 +186,8 @@ public class Result implements IResult {
     public String getBibleBlock() {
 
         String[] lines = text.split(Pattern.quote(" <!-> "));
-        String temp = "\t\t\t<p><a class=\"btn\" href=\"" + reference.getPath() + "\"> "
+
+        String test =  "\t\t\t<p><a class=\"btn\" href=\"" + reference.getPath() + "\"> "
                 + reference.getReadableReference() + "</a></p>\n" +
                 "\t\t\t<table class=\"bible-searchResult\">\n" +
                 "\t\t\t\t<tr>\n" +
@@ -191,7 +195,7 @@ public class Result implements IResult {
                 "\t\t\t\t\t<td class=\"mse-half\">" + getMarkedLine(lines[1]) + "</td>\n" +
                 "\t\t\t\t</tr>\n" +
                 "\t\t\t</table>";
-        return temp;
+        return test;
     }
 
     private String getMarkedLine(String line) {

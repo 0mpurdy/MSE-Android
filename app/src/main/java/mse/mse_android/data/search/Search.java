@@ -1,23 +1,12 @@
-package mse.mse_android.data;
-
-import android.app.Activity;
-import android.widget.ProgressBar;
-import android.widget.TextView;
+package mse.mse_android.data.search;
 
 import java.util.ArrayList;
 
-import mse.mse_android.common.*;
-import mse.mse_android.search.*;
-
 /**
- * Created by mj_pu_000 on 09/11/2015.
+ * @author Michael Purdy
  */
 public class Search {
 
-    private Activity context;
-
-    private Config cfg;
-    private ILogger logger;
     private String searchString;
 
     private boolean wildSearch;
@@ -26,12 +15,9 @@ public class Search {
 
     private int numTotalResults;
 
-    public Search(Activity context, Config cfg, ILogger logger, String searchString) {
-        this.context = context;
-        this.cfg = cfg;
-        this.logger = logger;
+    public Search(SearchType searchType, String searchString) {
         this.searchString = searchString;
-        this.searchType = cfg.getSearchType();
+        this.searchType = searchType;
         this.numTotalResults = 0;
         setWildSearch();
     }
@@ -75,12 +61,12 @@ public class Search {
         return searchType;
     }
 
-    public int getNumTotalResults() {
+    public int getTotalSearchResults() {
         return numTotalResults;
     }
 
     public void addAuthorSearchResults(int authorResults) {
-        numTotalResults+= authorResults;
+        numTotalResults += authorResults;
     }
 
 }

@@ -8,7 +8,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import mse.mse_android.common.Config;
+import mse.mse_android.common.config.Config;
 
 /**
  * Created by Michael Purdy on 04/01/2016.

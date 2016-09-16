@@ -1,6 +1,9 @@
-package mse.mse_android.data;
+package mse.mse_android.data.author;
 
 import java.io.File;
+
+import mse.mse_android.data.FileConstants;
+import mse.mse_android.data.PreparePlatform;
 
 public enum Author {
 
@@ -23,7 +26,9 @@ public enum Author {
 
     // endregion
 
-    private final int id;
+    private static final String TARGET_ROOT = "target";
+
+    private final int index;
     private final String code;
     private final String name;
     private final String folder;
@@ -32,8 +37,8 @@ public enum Author {
     private final boolean searchable;
     private final boolean asset;
 
-    Author(int id, String code, String name, String folder, int numVols, boolean isMinistry, boolean searchable, boolean asset) {
-        this.id = id;
+    Author(int index, String code, String name, String folder, int numVols, boolean isMinistry, boolean searchable, boolean asset) {
+        this.index = index;
         this.code = code;
         this.name = name;
         this.folder = folder;
@@ -43,54 +48,48 @@ public enum Author {
         this.asset = asset;
     }
 
-    // region folder
-
-    public String getPath() {
-        return folder + File.separator;
-    }
-
-    // endregion
-
-    // region prepare
-
-    public String getPreparePath() {
-        return "source" + File.separator + folder + File.separator;
-    }
-
-    public String getPreparePath(String filename) {
-        return "source" + File.separator + folder + File.separator + filename;
-    }
-
-    public String getPrepareSourceName(int volNumber) {
-        return folder + volNumber + ".txt";
-    }
-
-    // endregion
-
-    // region filenames
-
-    public String getContentsName() {
-        return code + "-Contents.html";
-    }
-
-    public String getIndexFileName() {
-        return "index-" + getCode() + ".idx";
-    }
-
-    public String getVolumeName(int volumeNumber) {
-        return folder + volumeNumber + ".html";
-    }
-
-    // endregion
-
-    // region getters
-
     public String getCode() {
         return code;
     }
 
     public String getName() {
         return name;
+    }
+
+    public String getTargetPath(String filename) {
+        return PreparePlatform.ANDROID.getTargetPath(true) + File.separator + folder + File.separator + filename;
+    }
+
+    public String getSourcePath(String filename) {
+        return "source" + File.separator + folder + File.separator + filename;
+    }
+
+    public String getRelativeHtmlTargetPath(String filename) {
+        return "../../target/" + folder + "/" + filename;
+    }
+
+    public String getTargetVolumePath(int volumeNumber) {
+        return getTargetPath(getTargetVolumeName(volumeNumber));
+    }
+
+    public String getTargetVolumeName(int volumeNumber) {
+        return folder + volumeNumber + ".html";
+    }
+
+    public String getSourceVolumePath(int volumeNumber) {
+        return getSourcePath(getSourceVolumeName(volumeNumber));
+    }
+
+    public String getSourceVolumeName(int volumeNumber) {
+        return folder + volumeNumber + ".txt";
+    }
+
+    public String getContentsName() {
+        return code + "-contents.html";
+    }
+
+    public String getIndexFilePath() {
+        return getTargetPath(FileConstants.INDEX_FILE_PREFIX + getCode().toLowerCase() + FileConstants.INDEX_FILE_ENDING);
     }
 
     public boolean isMinistry() {
@@ -105,13 +104,9 @@ public enum Author {
         return numVols;
     }
 
-    public int getID() {
-        return id;
+    public int getIndex() {
+        return index;
     }
-
-    // endregion
-
-    // region reader
 
     public static Author getFromString(String authorString) {
 
@@ -131,5 +126,7 @@ public enum Author {
 
     }
 
-    // endregion
+    public boolean isAsset() {
+        return asset;
+    }
 }

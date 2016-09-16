@@ -1,29 +1,26 @@
 package mse.mse_android.search;
 
 import android.app.Activity;
-import android.util.Log;
 import android.webkit.WebView;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import mse.mse_android.common.Config;
-import mse.mse_android.common.ILogger;
-import mse.mse_android.common.LogLevel;
-import mse.mse_android.common.LogRow;
-import mse.mse_android.data.Author;
-import mse.mse_android.data.AuthorIndex;
-import mse.mse_android.data.IResult;
-import mse.mse_android.data.Search;
+import mse.mse_android.common.config.Config;
+import mse.mse_android.common.log.ILogger;
+import mse.mse_android.common.log.LogLevel;
+import mse.mse_android.common.log.LogRow;
+import mse.mse_android.data.author.Author;
+import mse.mse_android.data.author.AuthorIndex;
+import mse.mse_android.data.search.IResult;
+import mse.mse_android.data.search.Search;
 import mse.mse_android.helpers.HtmlHelper;
 import mse.mse_android.helpers.ReaderCreator;
-import mse.mse_android.search.IndexStore;
 
 /**
- * Created by Michael Purdy on 17/11/2015.
- *
- * This is the thread that performs the search
+ * @author Michael Purdy
+ *      Thread to search multiple authors
  */
 public class SearchThread extends Thread {
 
@@ -130,7 +127,7 @@ public class SearchThread extends Thread {
                 }
             }
 
-            pwResults.println("\n\t\t<div class=\"spaced\">Number of total results: " + search.getNumTotalResults() + "</div>");
+            pwResults.println("\n\t\t<div class=\"spaced\">Number of total results: " + search.getTotalSearchResults() + "</div>");
             pwResults.println(HtmlHelper.getHtmlFooter("\t</div>"));
 
         } catch (FileNotFoundException fnfe) {
@@ -153,21 +150,6 @@ public class SearchThread extends Thread {
 
         logger.closeLog();
 
-    }
-
-    private String getHtmlHeader() {
-        return "<!DOCTYPE html>" +
-                "\n\n<html>" +
-                "\n\n<head>" +
-                "\n\t<link rel=\"stylesheet\" type=\"text/css\" href=\"../../mseStyle.css\" />" +
-                "\n\t<title>Search Results</title>" +
-                "\n</head>" +
-                "\n<body>" +
-                "\t<p><img src=\"../../img/results.gif\"></p>";
-    }
-
-    private String getHtmlFooter() {
-        return "\n</body>\n\n</html>";
     }
 
 }

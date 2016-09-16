@@ -1,19 +1,20 @@
 package mse.mse_android.search;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 
-import mse.mse_android.common.Config;
-import mse.mse_android.common.LogRow;
-import mse.mse_android.data.Author;
-import mse.mse_android.data.AuthorIndex;
-import mse.mse_android.data.BibleResultsLogic;
-import mse.mse_android.data.Reference;
-import mse.mse_android.data.Search;
-import mse.mse_android.data.SearchType;
+import mse.mse_android.common.config.Config;
+import mse.mse_android.common.log.LogRow;
+import mse.mse_android.data.author.Author;
+import mse.mse_android.data.author.AuthorIndex;
+import mse.mse_android.data.search.Reference;
+import mse.mse_android.data.search.Search;
+import mse.mse_android.data.search.SearchType;
 import mse.mse_android.helpers.HtmlHelper;
 
 /**
- * Created by mj_pu_000 on 12/11/2015.
+ * Cache for storing search parameters
+ * @author michaelpurdy
  */
 public class AuthorSearchCache {
 
@@ -32,11 +33,11 @@ public class AuthorSearchCache {
     public int refIndex;
     private String searchString;
     private boolean wildSearch;
-    String[] searchWords;
+    private String[] searchWords;
     private String[] searchTokens;
     private ArrayList<String> infrequentTokens;
     private String leastFrequentToken;
-    private String tooFrequentTokens;
+    private ArrayList<String> tooFrequentTokens;
     private int numInfrequentTokens;
     public int numAuthorResults;
     public short nextRef;
@@ -45,6 +46,7 @@ public class AuthorSearchCache {
     public String prevLine;
     private SearchType searchType;
     public boolean notFoundCurrentHymnBook;
+    boolean notFoundToken = false;
 
     // endregion
 
@@ -61,19 +63,19 @@ public class AuthorSearchCache {
         this.searchType = search.getSearchType();
 
         this.brl = new BibleResultsLogic();
-        this.reference = new Reference(author, 0,0,0);
+        this.reference = new Reference(author, 0,0,0,0);
 
-        tooFrequentTokens = "";
+        tooFrequentTokens = new ArrayList<>();
 
         infrequentTokens = new ArrayList<>();
     }
 
     // region setup
 
-    public int setup(ArrayList<LogRow> searchLog) {
+    public void setup(ArrayList<LogRow> searchLog) {
         setSearchWords();
         setSearchTokens(searchLog);
-        return setLeastFrequentToken();
+        setLeastFrequentToken();
     }
 
     private void setSearchWords() {
@@ -181,8 +183,7 @@ public class AuthorSearchCache {
                     // word is too frequent
                     // TODO add in logging
 //                    logger.log(LogLevel.DEBUG, "\tToken: " + nextSearchToken + " is too frequent");
-                    if (tooFrequent) tooFrequentTokens += ", ";
-                    tooFrequentTokens += nextSearchToken;
+                    tooFrequentTokens.add(nextSearchToken);
                     tooFrequent = true;
                 }
 
@@ -228,6 +229,16 @@ public class AuthorSearchCache {
             numAuthorResults++;
         } else if (brl.searchingDarby || !brl.foundDarby) {
             numAuthorResults++;
+        }
+    }
+
+    public void incrementSectionNumber() {
+        switch (author) {
+            case BIBLE:
+                reference.sectionNum += brl.verseNumIncrement();
+                break;
+            default:
+                reference.sectionNum++;
         }
     }
 
@@ -487,8 +498,29 @@ public class AuthorSearchCache {
         return wildSearch;
     }
 
-    public String getTooFrequentTokens() {
+    public String getTooFrequentTokensList() {
+        boolean first =true;
+        String list = "";
+        for (String token : tooFrequentTokens) {
+
+            if (first) {
+                first = false;
+            } else {
+                list += ", ";
+            }
+
+            list += token;
+        }
+
+        return list;
+    }
+
+    public ArrayList<String> getTooFrequentTokens() {
         return tooFrequentTokens;
+    }
+
+    public boolean getTokenNotFound() {
+        return notFoundToken;
     }
 
     public SearchType getSearchType() {
@@ -509,6 +541,8 @@ public class AuthorSearchCache {
 
     // endregion
 
+    // region printables
+
     public String printableSearchWords() {
         return HtmlHelper.printableArray(searchWords);
     }
@@ -516,5 +550,7 @@ public class AuthorSearchCache {
     public String printableSearchTokens() {
         return HtmlHelper.printableArray(searchTokens);
     }
+
+    // endregion
 
 }

@@ -3,32 +3,34 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package mse.mse_android.common;
+package mse.mse_android.common.config;
 
 import android.app.Activity;
 
-import mse.mse_android.data.Author;
-import mse.mse_android.data.SearchType;
+import mse.mse_android.common.log.LogLevel;
+import mse.mse_android.common.log.Logger;
+import mse.mse_android.data.author.Author;
+import mse.mse_android.data.search.SearchType;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
- * @author michael
+ * @author Michael Purdy
  */
 public class Config {
 
     // the number of times a word has to appear before it is too frequent
     public final int TOO_FREQUENT = 10000;
 
+    private final String contextDir;
     private final String configFilePath;
 
     private Logger logger;
 
-    private Activity context;
+    private static final String mseVersion = "3.0.2";
 
-    private String mseVersion;
     private String resDir;
     private String resultsFileName;
     private String searchString;
@@ -36,55 +38,59 @@ public class Config {
     private HashMap<String, Boolean> selectedAuthors;
     private boolean setup;
 
-    public Config(Logger logger, Activity context) {
+    public Config(Logger logger, String contextDir, String path, boolean useDefaults) {
 
         this.logger = logger;
-        this.context = context;
+        this.contextDir = contextDir;
+        this.configFilePath = path;
 
-        configFilePath = context.getFilesDir() + File.separator + "config.txt";
-
-        File configFile = new File(configFilePath);
-        if (!configFile.exists()) {
-            logger.log(LogLevel.LOW, "No config file found - setting defaults");
+        if (useDefaults) {
             setDefaults();
-            save();
-            return;
-        }
-
-
-        BufferedReader br = null;
-        try {
-
-            br = new BufferedReader(new FileReader(configFilePath));
-
-            mseVersion = getNextOption(br, "mseVersion");
-            resDir = getNextOption(br, "resDir");
-            resultsFileName = getNextOption(br, "resultsFileName");
-            searchString = getNextOption(br, "searchString");
-            searchType = SearchType.fromString(getNextOption(br, "searchScope"));
-            if (searchType== null) searchType = SearchType.MATCH;
-
-            // skip selected authors line
-            br.readLine();
-
-            selectedAuthors = new HashMap<>();
-
-            // for each searchable author
-            for (Author nextAuthor : Author.values()) {
-                if (nextAuthor.isSearchable()) {
-                    String[] splitLine = br.readLine().split(":");
-                    selectedAuthors.put(splitLine[0], Boolean.parseBoolean(splitLine[1]));
-                }
+        } else {
+            File configFile = new File(configFilePath);
+            if (!configFile.exists()) {
+                logger.log(LogLevel.LOW, "No config file found - setting defaults");
+                setDefaults();
+                save();
+                return;
             }
 
-        } catch (IOException | ArrayIndexOutOfBoundsException | NullPointerException ex) {
-            logger.log(LogLevel.LOW, "Error reading config - setting defaults");
-            setDefaults();
-        } finally {
-            if (br != null) try {
-                br.close();
-            } catch (IOException e) {
-                logger.log(LogLevel.HIGH, "Could not close config file");
+
+            BufferedReader br = null;
+            try {
+
+                br = new BufferedReader(new FileReader(configFilePath));
+
+                // skip mse Version
+                br.readLine();
+                resDir = getNextOption(br, "resDir");
+                resultsFileName = getNextOption(br, "resultsFileName");
+                searchString = getNextOption(br, "searchString");
+                searchType = SearchType.fromString(getNextOption(br, "searchType"));
+                if (searchType == null) searchType = SearchType.MATCH;
+
+                // skip selected authors line
+                br.readLine();
+
+                selectedAuthors = new HashMap<>();
+
+                // for each searchable author
+                for (Author nextAuthor : Author.values()) {
+                    if (nextAuthor.isSearchable()) {
+                        String[] splitLine = br.readLine().split(":");
+                        selectedAuthors.put(splitLine[0], Boolean.parseBoolean(splitLine[1]));
+                    }
+                }
+
+            } catch (IOException | ArrayIndexOutOfBoundsException | NullPointerException ex) {
+                logger.log(LogLevel.LOW, "Error reading config - setting defaults");
+                setDefaults();
+            } finally {
+                if (br != null) try {
+                    br.close();
+                } catch (IOException e) {
+                    logger.log(LogLevel.HIGH, "Could not close config file");
+                }
             }
         }
 
@@ -106,7 +112,6 @@ public class Config {
 
     private void setDefaults() {
 
-        mseVersion = "3.0.0";
         resDir = File.separator;
         resultsFileName = "SearchResults.htm";
         searchString = "";
@@ -138,7 +143,7 @@ public class Config {
                 writeOption(bw, "resDir", resDir);
                 writeOption(bw, "resultsFileName", resultsFileName);
                 writeOption(bw, "searchString", searchString);
-                writeOption(bw, "searchScope", searchType.getMenuName());
+                writeOption(bw, "searchType", searchType.getMenuName());
 
                 bw.write(" --- Selected Authors --- ");
                 bw.newLine();
@@ -180,7 +185,7 @@ public class Config {
     }
 
     public String getResDir() {
-        return context.getFilesDir() + resDir;
+        return contextDir + File.separator + resDir;
     }
 
     public String getResultsFile() {
@@ -207,12 +212,7 @@ public class Config {
         this.searchType = searchType;
     }
 
-    public ArrayList<Author> getSelectedAuthors() {
-        ArrayList<Author> selectedAuthors = new ArrayList<>();
-        for (Author nextAuthor : Author.values()) {
-            if (nextAuthor.isSearchable() && isAuthorSelected(nextAuthor.getCode()))
-                selectedAuthors.add(nextAuthor);
-        }
+    public HashMap<String, Boolean> getSelectedAuthors() {
         return selectedAuthors;
     }
 
@@ -251,6 +251,26 @@ public class Config {
     public void refresh() {
         setDefaults();
         save();
+    }
+
+    public String getPrevSearchesFile() {
+        return getResDir() + File.separator + "target" + File.separator + "results" + File.separator + "PreviousSearches.html";
+    }
+
+    public String getSearchEngineHelpPage() {
+        return getResDir() + File.separator + "other" + File.separator + "Help.html";
+    }
+
+    public String getSupportPage() {
+        return getResDir() + File.separator + "other" + File.separator + "Contact.html";
+    }
+
+    public String getAboutPage() {
+        return getResDir() + File.separator + "other" + File.separator + "AboutMSE.html";
+    }
+
+    public String getLabourersPage() {
+        return getResDir() + File.separator + "other" + File.separator + "Labourers.html";
     }
 
 }

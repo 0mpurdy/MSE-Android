@@ -32,11 +32,11 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import mse.mse_android.R;
-import mse.mse_android.common.Config;
-import mse.mse_android.common.LogLevel;
-import mse.mse_android.common.Logger;
-import mse.mse_android.data.Author;
-import mse.mse_android.data.Search;
+import mse.mse_android.common.config.Config;
+import mse.mse_android.common.log.LogLevel;
+import mse.mse_android.common.log.Logger;
+import mse.mse_android.data.author.Author;
+import mse.mse_android.data.search.Search;
 import mse.mse_android.helpers.ReaderCreator;
 import mse.mse_android.search.IndexStore;
 import mse.mse_android.search.SearchProgressThread;
@@ -122,6 +122,12 @@ public class SearchFragment extends Fragment {
                         } else {
                             url = url.substring(url.indexOf(':') + 1);
                         }
+
+                        //todo fix horrible hack
+                        if (url.contains("files//")) {
+                            url = url.replace("files//", "files/");
+                        }
+
                         url = "file:///android_asset/" + url;
                         Log.d("[A_URL ]", url);
                         wvSearchResults.loadUrl(url);
@@ -241,7 +247,7 @@ public class SearchFragment extends Fragment {
         }
 
         String searchString = searchTextBox.getText().toString();
-        Search search = new Search(mActivity, mCfg, mLogger, searchString);
+        Search search = new Search(mCfg.getSearchType(), searchString);
 
         mLogger.log(LogLevel.INFO, "Searched for: " + searchString);
 
@@ -422,12 +428,13 @@ public class SearchFragment extends Fragment {
     }
 
     private void createLog() {
-        mLogger = new Logger(LogLevel.DEBUG, mActivity);
+        mLogger = new Logger(LogLevel.DEBUG, mActivity.getFilesDir() + File.separator + Logger.DEFAULT_LOG);
     }
 
     private void createConfig() {
         mLogger.openLog();
-        mCfg = new Config(mLogger, mActivity);
+        mCfg = new Config(mLogger, mActivity.getFilesDir().toString(), mActivity.getFilesDir() + File.separator + "config.txt", true);
+//        mCfg = new Config(mLogger, mActivity.getFilesDir() + File.separator + "config.txt");
         mCfg.refresh();
         mLogger.closeLog();
         ReaderCreator.mCfg = mCfg;

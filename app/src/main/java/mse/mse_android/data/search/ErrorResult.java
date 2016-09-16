@@ -1,4 +1,4 @@
-package mse.mse_android.data;
+package mse.mse_android.data.search;
 
 /**
  * Created by Michael Purdy on 04/01/2016.

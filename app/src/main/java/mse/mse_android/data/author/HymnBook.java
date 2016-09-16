@@ -3,11 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package mse.mse_android.data;
+package mse.mse_android.data.author;
 
 /**
- *
- * @author mj_pu_000
+ * @author Michael Purdy
  */
 public enum HymnBook {
 
@@ -25,7 +24,7 @@ public enum HymnBook {
         this.filename = filename;
     }
 
-    public String getInputFilename() {
+    public String getSourceFilename() {
         return filename + ".txt";
     }
 
@@ -33,12 +32,12 @@ public enum HymnBook {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public String getTargetFilename() {
+        return filename + ".html";
     }
 
-    public String getOutputFilename() {
-        return filename + ".htm";
+    public String getContentsName() {
+        return filename + "-contents.html";
     }
 
     public static int getIndexFromString(String bookName) {

@@ -1,7 +1,7 @@
-package mse.mse_android.data;
+package mse.mse_android.search;
 
 /**
- * Created by Michael Purdy on 04/01/2016.
+ * @author Michael Purdy
  */
 public class BibleResultsLogic {
 

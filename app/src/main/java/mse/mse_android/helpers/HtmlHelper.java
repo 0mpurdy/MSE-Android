@@ -3,12 +3,13 @@ package mse.mse_android.helpers;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 
-import mse.mse_android.data.Author;
-import mse.mse_android.data.HymnBook;
+import mse.mse_android.data.author.Author;
+import mse.mse_android.data.author.HymnBook;
 import mse.mse_android.search.AuthorSearchCache;
 
 /**
- * Created by Michael Purdy on 04/01/2016.
+ * @author Michael Purdy
+ *      Helps with creation of HTML files
  */
 public class HtmlHelper {
 
@@ -80,7 +81,7 @@ public class HtmlHelper {
     public static String getFormattedHymnbookLink(AuthorSearchCache asc) {
         return String.format("\t\t\t<p class=\"%s\"><a href=\"%s\">%s</a></p>",
                 "results-hymnbook-name",
-                "..\\..\\" + FileHelper.getTargetPath(asc.author, asc.reference.getFileName()),
+                "..\\..\\" + asc.author.getTargetPath(asc.reference.getFileName()),
                 HymnBook.values()[asc.reference.volNum - 1].getName());
     }
 

@@ -7,21 +7,25 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
-import mse.mse_android.common.LogLevel;
-import mse.mse_android.common.LogRow;
-import mse.mse_android.data.Author;
+import mse.mse_android.common.log.LogLevel;
+import mse.mse_android.common.log.LogRow;
+import mse.mse_android.data.author.Author;
 import mse.mse_android.search.AuthorSearchCache;
 
 /**
- *
+ * @author Michael Purdy
  */
-public class HtmlReader {
+public class HtmlReader implements IFileReader {
 
     private BufferedReader br;
     private ArrayList<LogRow> searchLog;
 
-    public HtmlReader(String path, ArrayList<LogRow> searchLog) throws IOException {
-        this.br = ReaderCreator.getBufferedReader(path, true);
+    public HtmlReader(String path, ArrayList<LogRow> searchLog) {
+        try {
+            this.br = ReaderCreator.getBufferedReader(path,true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         this.searchLog = searchLog;
     }
 
@@ -222,13 +226,13 @@ public class HtmlReader {
         return 0;
     }
 
-    // endregion
-
     private int getPageNumber(String line, String splitStart, String splitEnd) {
         int start = line.indexOf(splitStart) + splitStart.length();
         int end = line.indexOf(splitEnd, start);
         return Integer.parseInt(line.substring(start, end));
     }
+
+    // endregion
 
     // region getLastLine
 
@@ -383,7 +387,6 @@ public class HtmlReader {
             } else if (asc.author.equals(Author.HYMNS)) {
 
                 // skip author and metre
-//            String temp = "";
                 for (int i = 0; i < 7; i++) /*temp =*/ br.readLine();
 
                 return br.readLine();
@@ -401,7 +404,7 @@ public class HtmlReader {
 
     // region readResults
 
-    String authorIdentifier = "Results of search through";
+    private final String authorIdentifier = "Results of search through";
 
     public Author findNextAuthor() throws IOException {
         String currentLine = br.readLine();
@@ -428,9 +431,15 @@ public class HtmlReader {
 
     // endregion
 
+    // region logging
+
     private void log(LogLevel logLevel, String message) {
         searchLog.add(new LogRow(logLevel, message));
     }
+
+    // endregion
+
+    // region close
 
     public void close() {
         if (br != null) try {
@@ -439,6 +448,10 @@ public class HtmlReader {
             e.printStackTrace();
         }
     }
+
+    // endregion
+
+    // region read
 
     public String readContentLine() {
         String contentLine = null;
@@ -450,6 +463,8 @@ public class HtmlReader {
         }
         return contentLine;
     }
+
+    // endregion
 
     // region refine
 
@@ -525,20 +540,9 @@ public class HtmlReader {
         return result;
     }
 
-    // endregion
-
-    private String getAuthorResultStartString(Author author) {
-        switch (author) {
-            case BIBLE:
-            case HYMNS:
-                return "btn";
-            default:
-                return "container";
-        }
-    }
-
     private boolean checkEndAuthorResults(String line) {
         return (line == null) || line.contains("Number of results for");
     }
 
+    // endregion
 }

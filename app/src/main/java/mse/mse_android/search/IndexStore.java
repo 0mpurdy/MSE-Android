@@ -2,10 +2,11 @@ package mse.mse_android.search;
 
 import android.content.res.AssetManager;
 
-import mse.mse_android.common.*;
-import mse.mse_android.data.*;
+import mse.mse_android.common.config.Config;
+import mse.mse_android.common.log.ILogger;
+import mse.mse_android.data.author.Author;
+import mse.mse_android.data.author.AuthorIndex;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 
 /**

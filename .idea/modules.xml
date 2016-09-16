@@ -3,7 +3,10 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/MSE-Android.iml" filepath="$PROJECT_DIR$/MSE-Android.iml" />
+      <module fileurl="file://$PROJECT_DIR$/libs/SlidingMenu-master/SlidingMenu-master.iml" filepath="$PROJECT_DIR$/libs/SlidingMenu-master/SlidingMenu-master.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/libs/SlidingMenu-master/library/library.iml" filepath="$PROJECT_DIR$/libs/SlidingMenu-master/library/library.iml" />
+      <module fileurl="file://$PROJECT_DIR$/libs/libs.iml" filepath="$PROJECT_DIR$/libs/libs.iml" />
     </modules>
   </component>
 </project>

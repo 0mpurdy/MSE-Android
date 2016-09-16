@@ -1,5 +1,9 @@
-package mse.mse_android.data;
+package mse.mse_android.data.author;
 
+/**
+ * @author Michael Purdy
+ *         An enum of all the books of the bible
+ */
 public enum BibleBook {
 
     // region books
@@ -25,7 +29,7 @@ public enum BibleBook {
     PSALMS("Psalms", 150),
     PROVERBS("Proverbs", 31),
     ECCLESIASTES("Ecclesiastes", 12),
-    SONGOFSONGS("SongOfSongs", 8),
+    SONGOFSONGS("Song Of Songs", 8),
     ISAIAH("Isaiah", 66),
     JEREMIAH("Jeremiah", 52),
     LAMENTATIONS("Lamentations", 5),
@@ -81,8 +85,8 @@ public enum BibleBook {
         this.numChapters = numChapters;
     }
 
-    public String getNameWithoutSpaces() {
-        return name.replace(" ","");
+    public String getDashCaseName() {
+        return name.replace(" ", "-").toLowerCase();
     }
 
     public String getNameWithSpaces() {
@@ -100,8 +104,12 @@ public enum BibleBook {
         return -1;
     }
 
-    public String getBookFileName() {
-        return getNameWithoutSpaces() + ".html";
+    public String getTargetName() {
+        return getDashCaseName() + ".html";
+    }
+
+    public String getSourceName() {
+        return getDashCaseName() + ".txt";
     }
 
     public static int getNumOldTestamentBooks() {
@@ -113,3 +121,4 @@ public enum BibleBook {
     }
 
 }
+

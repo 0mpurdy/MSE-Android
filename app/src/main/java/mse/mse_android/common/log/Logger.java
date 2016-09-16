@@ -1,4 +1,4 @@
-package mse.mse_android.common;
+package mse.mse_android.common.log;
 
 import android.app.Activity;
 import android.util.Log;
@@ -13,19 +13,14 @@ import java.util.Date;
  */
 public class Logger implements ILogger {
 
-//    private Activity context;
-
-    private String logFilePath = "Log.txt";
+    public static final String DEFAULT_LOG = "log.txt";
 
     DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     File loggingFile;
     PrintWriter pwLog;
     LogLevel logLevel;
 
-    public Logger(LogLevel logLevel, Activity context) {
-//        this.context = context;
-
-        logFilePath = context.getFilesDir() + File.separator + logFilePath;
+    public Logger(LogLevel logLevel, String logFilePath) {
 
         loggingFile = new File(logFilePath);
         try {
@@ -41,8 +36,9 @@ public class Logger implements ILogger {
     public synchronized void log(LogLevel logLevel, String message) {
         if (logLevel.value <= this.logLevel.value) {
             Date date = new Date();
-            pwLog.printf("%s [%s] - %s\n", logLevel.tag, dateFormat.format(date), message);
-            Log.d(logLevel.tag, String.format("[%s] - %s", dateFormat.format(date), message));
+            String tag = logLevel.tag;
+            pwLog.printf("%s [%s] - %s%s", tag, dateFormat.format(date), message, System.lineSeparator());
+            Log.d(tag, String.format("[%s] - %s", dateFormat.format(date), message));
         }
     }
 
@@ -74,6 +70,12 @@ public class Logger implements ILogger {
 
     public void closeLog() {
         this.pwLog.close();
+    }
+
+    @Override
+    public void logException(Exception e) {
+        log(LogLevel.HIGH, e.getMessage());
+        e.printStackTrace(pwLog);
     }
 
     public void refresh() {

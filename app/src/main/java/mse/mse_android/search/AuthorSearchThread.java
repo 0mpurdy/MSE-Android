@@ -5,11 +5,6 @@
  */
 package mse.mse_android.search;
 
-// gui
-
-import android.app.Activity;
-import android.util.Log;
-
 // java
 import java.io.*;
 import java.util.ArrayList;
@@ -17,12 +12,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 // mse
-import mse.mse_android.common.*;
-import mse.mse_android.data.*;
+import mse.mse_android.common.config.Config;
+import mse.mse_android.common.log.LogLevel;
+import mse.mse_android.common.log.LogRow;
+import mse.mse_android.data.author.Author;
+import mse.mse_android.data.search.ErrorResult;
+import mse.mse_android.data.search.IResult;
+import mse.mse_android.data.search.Result;
+import mse.mse_android.data.search.SearchType;
 import mse.mse_android.helpers.FileHelper;
 import mse.mse_android.helpers.HtmlHelper;
 import mse.mse_android.helpers.HtmlReader;
-import mse.mse_android.helpers.ReadFileHelper;
+import mse.mse_android.helpers.IFileReader;
 
 
 /**
@@ -55,6 +56,12 @@ public class AuthorSearchThread extends SingleSearchThread {
 
     // region search
 
+    /**
+     * Search a single author
+     *
+     * @param results List of results to add too
+     * @param asc     Author Search Cache
+     */
     private void searchAuthor(ArrayList<IResult> results, AuthorSearchCache asc) {
         /*
         search all the words to make sure that all the search tokens are in the author's
@@ -65,11 +72,11 @@ public class AuthorSearchThread extends SingleSearchThread {
         log(LogLevel.DEBUG, "\tSearching: " + asc.author.getName() + " for \"" + asc.getSearchString() + "\"");
 
         // setup searchWords, searchTokens and leastFrequentTokens
-        int errorNum = asc.setup(searchLog);
+        asc.setup(searchLog);
         log(LogLevel.TRACE, "\tSearch strings: " + asc.printableSearchWords());
         log(LogLevel.TRACE, "\tSearch tokens: " + asc.printableSearchTokens());
 
-        if ((asc.getLeastFrequentToken() != null) && (errorNum % 4 < 2)) {
+        if ((asc.getLeastFrequentToken() != null) && !asc.getTokenNotFound()) {
             // at least one searchable token and all tokens in author index
 
             asc.setupReferences();
@@ -97,83 +104,90 @@ public class AuthorSearchThread extends SingleSearchThread {
 
         } else {
             String error = "\t\t\t<p class=\"centered\">";
-            if (errorNum % 4 > 1) {
+            if (asc.getTokenNotFound()) {
                 error += "Not all words were found in index.";
                 searchLog.add(new LogRow(LogLevel.LOW, "\tTokens in " + asc.author.getCode() + " not all found: " + asc.printableSearchTokens()));
             }
-            if (errorNum >= 4) {
-                error += "Some words appeared too frequently: " + asc.getTooFrequentTokens();
-                searchLog.add(new LogRow(LogLevel.LOW, "\tToo frequent tokens in " + asc.author.getCode() + ": " + asc.getTooFrequentTokens()));
+            if (asc.getTooFrequentTokens().size() > 0) {
+                error += "Some words appeared too frequently: " + asc.getTooFrequentTokensList();
+                searchLog.add(new LogRow(LogLevel.LOW, "\tToo frequent tokens in " + asc.author.getCode() + ": " + asc.getTooFrequentTokensList()));
             }
             error += "</p>";
             results.add(new ErrorResult(error));
         }
     }
 
+    /**
+     * Search a single volume
+     *
+     * @param results List of results to add to
+     * @param asc     Author Search Cache
+     * @return true if no errors in searching
+     */
     private boolean searchVolume(ArrayList<IResult> results, AuthorSearchCache asc) {
-        // for each volume
 
-        searchLog.add(new LogRow(LogLevel.TRACE, "\tVol: " + asc.reference.volNum));
-
+        // initialise page and volume number
         int cPageNum = 0;
-        final int cVolNum = asc.reference.volNum;
+        final int currentVolumeNumber = asc.reference.volNum;
 
-        // get file name
-        String filename = FileHelper.getHtmlFileName(asc.author, asc.reference.volNum);
+        // log volume being searched
+        searchLog.add(new LogRow(LogLevel.TRACE, "\tVol: " + currentVolumeNumber));
 
-        try {
-            HtmlReader htmlReader = new HtmlReader(filename, searchLog);
-            // start with the first line
-            asc.line = htmlReader.readContentLine();
+        // open the file
+        String filename = FileHelper.getHtmlFileName(cfg, asc.author, currentVolumeNumber);
+        IFileReader fReader = new HtmlReader(filename, searchLog);
 
-            progress.addAndGet(1000 / asc.author.getNumVols());
+        // read first line
+        asc.line = fReader.readContentLine();
 
-            while (asc.reference.volNum == cVolNum) {
-                // while still in the same volume
-                // loop through references
+        // set progress
+        progress.addAndGet(1000 / asc.author.getNumVols());
 
-                asc.prevLine = "";
+        // while still in the same volume keep searching
+        while (asc.reference.volNum == currentVolumeNumber) {
 
-                // skip to next page and get the last line of the previous page
-                cPageNum = htmlReader.findNextAuthorPage(asc);
+            asc.prevLine = "";
 
-                // if the page number is 0 log the error and break out
-                if (cPageNum == 0) {
-                    log(LogLevel.HIGH, "Could not find reference " + asc.reference.getShortReadableReference());
-                    htmlReader.close();
-                    return false;
-                }
+            // skip to next page and get the last line of the previous page
+            cPageNum = fReader.findNextAuthorPage(asc);
 
-                asc.currentSectionHeader = htmlReader.getFirstAuthorSectionHeader(asc);
-                if (asc.currentSectionHeader == null) {
-                    searchLog.add(new LogRow(LogLevel.HIGH, "NULL line " + asc.reference.getShortReadableReference()));
-                } else {
-                    searchPage(results, asc, htmlReader);
-                }
-                asc.line = asc.currentSectionHeader;
+            // if the page number is 0 log then error and break out
+            if (cPageNum == 0) {
+                log(LogLevel.HIGH, "Could not find reference " + asc.reference.getShortReadableReference());
+                fReader.close();
+                return false;
+            }
 
-                // clear the previousLine
-                asc.prevLine = "";
+            // get the first section
+            asc.currentSectionHeader = fReader.getFirstAuthorSectionHeader(asc);
 
-                // get the next reference
-                asc.getNextPage();
+            // search the page
+            if (asc.currentSectionHeader != null) {
+                searchPage(results, asc, fReader);
+            } else {
+                searchLog.add(new LogRow(LogLevel.HIGH, "NULL line " + asc.reference.getShortReadableReference()));
+            }
+            asc.line = asc.currentSectionHeader;
 
-            } // finished references in volume
+            // clear the previousLine
+            asc.prevLine = "";
 
-            htmlReader.close();
-            return true;
-        } catch (IOException e) {
-            log(LogLevel.HIGH, "Could not open volume: " + filename);
-            return false;
-        }
+            // get the next reference
+            asc.getNextPage();
+
+        } // finished references in volume
+
+        fReader.close();
+        return true;
 
     }
 
-    private void searchPage(ArrayList<IResult> results, AuthorSearchCache asc, HtmlReader htmlReader) {
+    private void searchPage(ArrayList<IResult> results, AuthorSearchCache asc, IFileReader htmlReader) {
 
         boolean foundToken = false;
 
-        asc.reference.verseNum = 0;
+        asc.reference.sectionNum = 0;
+        asc.reference.sentenceNum = 0;
 
         // while still on the same page (class != page-number)
         while (isNextSectionSearchable(asc.currentSectionHeader)) {
@@ -182,14 +196,9 @@ public class AuthorSearchThread extends SingleSearchThread {
 
             String section = asc.line;
 
-            asc.reference.verseNum += asc.brl.verseNumIncrement();
+            asc.incrementSectionNumber();
 
-            // search the section
-            if (asc.author == Author.BIBLE) {
-                foundToken = searchBibleSection(results, section, asc) || foundToken;
-            } else {
-                foundToken = searchSection(results, section, asc) || foundToken;
-            }
+            foundToken = searchSection(results, section, asc) || foundToken;
 
             asc.brl.setFoundDarby(foundToken);
 
@@ -213,6 +222,15 @@ public class AuthorSearchThread extends SingleSearchThread {
         }
     }
 
+    private boolean searchSection(ArrayList<IResult> results, String section, AuthorSearchCache asc) {
+        switch (asc.author) {
+            case BIBLE:
+                return searchBibleSection(results, section, asc);
+            default:
+                return searchMinistrySection(results, section, asc);
+        }
+    }
+
     private boolean searchBibleSection(ArrayList<IResult> results, String section, AuthorSearchCache asc) {
         // return true if jnd OR kjv are valid
 
@@ -223,8 +241,8 @@ public class AuthorSearchThread extends SingleSearchThread {
         String jndSection = lines[0];
         String kjvSection = lines[1];
 
-        if (searchSection(results, jndSection, asc) || searchSection(results, kjvSection, asc)) {
-            Result result = new Result(asc.author, asc.reference.copy(), section, asc.searchWords);
+        if (searchMinistrySection(results, jndSection, asc) || searchMinistrySection(results, kjvSection, asc)) {
+            Result result = new Result(asc.author, asc.reference.copy(), section, asc.getSearchWords());
             results.add(result);
             asc.incrementResults();
             validSection = true;
@@ -233,13 +251,15 @@ public class AuthorSearchThread extends SingleSearchThread {
         return validSection;
     }
 
-    private boolean searchSection(ArrayList<IResult> results, String section, AuthorSearchCache asc) {
+    private boolean searchMinistrySection(ArrayList<IResult> results, String section, AuthorSearchCache asc) {
 
         ArrayList<String> scopes = getSearchScopes(section, asc.prevLine);
 
         boolean validSection = false;
 
         for (String scope : scopes) {
+
+            if (isSentenceScope()) asc.reference.sentenceNum++;
 
             boolean validScope;
 
@@ -263,10 +283,10 @@ public class AuthorSearchThread extends SingleSearchThread {
                     Result result;
                     if (asc.author.equals(Author.HYMNS) && asc.notFoundCurrentHymnBook) {
                         asc.notFoundCurrentHymnBook = false;
-                        result = new Result(asc.author, asc.reference.copy(), markedLine, asc.searchWords,
+                        result = new Result(asc.author, asc.reference.copy(), markedLine, asc.getSearchWords(),
                                 HtmlHelper.getFormattedHymnbookLink(asc));
                     } else {
-                        result = new Result(asc.author, asc.reference.copy(), markedLine, asc.searchWords);
+                        result = new Result(asc.author, asc.reference.copy(), markedLine, asc.getSearchWords());
                     }
                     results.add(result);
 
@@ -282,7 +302,7 @@ public class AuthorSearchThread extends SingleSearchThread {
     private ArrayList<String> getSearchScopes(String section, String previousLine) {
         ArrayList<String> scopes = new ArrayList<>();
         // get the search lines based on the search scope
-        if ((asc.getSearchType() == SearchType.SENTENCE) || asc.getSearchType() == SearchType.MATCH || asc.getSearchType() == SearchType.PHRASE) {
+        if (isSentenceScope()) {
             scopes = convertLineIntoSentences(section, getTrailingIncompleteSentence(previousLine));
         } else {
             scopes.add(section);
@@ -290,7 +310,9 @@ public class AuthorSearchThread extends SingleSearchThread {
         return scopes;
     }
 
-    // endregion
+    private boolean isSentenceScope() {
+        return (asc.getSearchType() == SearchType.SENTENCE) || asc.getSearchType() == SearchType.MATCH || asc.getSearchType() == SearchType.PHRASE;
+    }
 
     private boolean isNextSectionSearchable(String sectionHeader) {
 
@@ -305,14 +327,7 @@ public class AuthorSearchThread extends SingleSearchThread {
         }
     }
 
-    // region checkValidScope
-
-    boolean foundCurrentSearchToken;
-
-
     // endregion
-
-    private int startOfLastSentencePos;
 
     // region processSection
 
@@ -322,7 +337,7 @@ public class AuthorSearchThread extends SingleSearchThread {
 
         if (line.isEmpty()) return "";
 
-        startOfLastSentencePos = line.lastIndexOf("<a name=");
+        int startOfLastSentencePos = line.lastIndexOf("<a name=");
 
         // no sentence break in line
         if (startOfLastSentencePos < 0) return line;
@@ -334,15 +349,13 @@ public class AuthorSearchThread extends SingleSearchThread {
         return "";
     }
 
-    ArrayList<String> sentences = new ArrayList<>();
-    int startOfSentencePos;
-    int endOfSentencePos;
+    private ArrayList<String> sentences = new ArrayList<>();
 
     private ArrayList<String> convertLineIntoSentences(String line, String trailingIncompleteSentence) {
 
         sentences.clear();
-        startOfSentencePos = 0;
-        endOfSentencePos = 0;
+        int startOfSentencePos = 0;
+        int endOfSentencePos = 0;
 
         if (!line.contains("<a name=")) {
             // if there are no fullstops return the whole line
@@ -369,13 +382,10 @@ public class AuthorSearchThread extends SingleSearchThread {
 
         }
 
-        if (sentences.size() > 0)
-            sentences.set(0, trailingIncompleteSentence + " " + sentences.get(0));
+        if (sentences.size() > 0) sentences.set(0, trailingIncompleteSentence + " " + sentences.get(0));
 
         return sentences;
     }
-
-    // endregion
 
     private String getBasicWords(String strIn, boolean dropPunctuation, boolean dropTableTags) {
         String inString = strIn;
@@ -470,9 +480,15 @@ public class AuthorSearchThread extends SingleSearchThread {
         return outString;
     }
 
+    // endregion
+
+    // region logging
+
     private void log(LogLevel logLevel, String message) {
         searchLog.add(new LogRow(logLevel, message));
     }
+
+    // endregion
 
     // region singleSearchThreadMethods
 
